@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mohini CSC Centre — Partner Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/partner.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="logo.png" alt="Mohini CSC Centre">
+        <div>
+          <strong>MOHINI CSC</strong>
+          <span>PARTNER PORTAL</span>
+        </div>
+      </div>
+      <nav id="sideNav">
+        <button class="nav-item active" data-view="dashboard"><i>⌂</i> Dashboard</button>
+        <button class="nav-item" data-view="services"><i>▦</i> Services</button>
+        <button class="nav-item" data-view="applications"><i>↻</i> My Applications</button>
+        <button class="nav-item" data-view="wallet"><i>₹</i> Wallet & Payments</button>
+        <button class="nav-item" data-view="downloads"><i>⇩</i> Downloads</button>
+        <button class="nav-item" data-view="support"><i>?</i> Support</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar-sm">MC</div>
+          <div>
+            <b>Mohini Partner</b>
+            <small>ID: MCS-001</small>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;color:var(--danger);justify-content:center" onclick="logout()">🚪 Logout</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;color:var(--danger);justify-content:center;font-size:11px" onclick="deleteAccount()">🗑 Delete Account</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu" id="mobileMenuBtn">☰</button>
+          <div class="breadcrumb">
+            <span id="pageKicker">Overview</span>
+            <b id="pageTitle">Dashboard</b>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div style="position:relative">
+            <button class="icon-btn" id="notifBtn">🔔<span class="badge" id="notifBadge">0</span></button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No notifications</div>
+              </div>
+            </div>
+          </div>
+          <div class="profile-pill">
+            <div class="avatar-sm">MC</div>
+            <div>
+              <b>Mohini Partner</b>
+              <small>Partner ID: MCS-001</small>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <section class="content">
+
+        <!-- ========== DASHBOARD ========== -->
+        <div id="dashboardView" class="view active">
+          <div class="page-intro">
+            <span class="eyebrow">MOHINI CSC CENTRE</span>
+            <h1 id="pageGreeting">Good evening, Partner</h1>
+            <p>Submit customer requests, upload documents and track every application from one place.</p>
+          </div>
+
+          <div class="stats-grid" id="dashboardStats">
+            <div class="stat-card"><div class="stat-icon blue">▤</div><div class="stat-info"><span>Total Applications</span><strong id="statTotal">0</strong><small>No applications yet</small></div></div>
+            <div class="stat-card"><div class="stat-icon amber">◷</div><div class="stat-info"><span>In Processing</span><strong id="statProcessing">0</strong><small>Needs attention</small></div></div>
+            <div class="stat-card"><div class="stat-icon green">✓</div><div class="stat-info"><span>Completed</span><strong id="statCompleted">0</strong><small>Completion rate</small></div></div>
+            <div class="stat-card"><div class="stat-icon violet">₹</div><div class="stat-info"><span>Wallet Balance</span><strong id="statWallet">₹0</strong><small>Ready for use</small></div></div>
+          </div>
+
+          <div class="card-header"><div><h3>Popular Services</h3></div><button class="btn btn-ghost btn-sm" onclick="switchView('services')">View all →</button></div>
+          <div class="service-grid" id="dashServiceGrid" style="margin-bottom:28px">
+          </div>
+
+          <div class="card-header"><div><h3>Recent Applications</h3></div><button class="btn btn-ghost btn-sm" onclick="switchView('applications')">Open applications →</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Status</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+              <tbody id="recentRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========== SERVICES ========== -->
+        <div id="servicesView" class="view">
+          <div class="page-intro">
+            <span class="eyebrow">SERVICE CATALOG</span>
+            <h1>Services</h1>
+            <p>Start a new customer application by selecting a service.</p>
+          </div>
+          <div class="service-grid" id="svcServiceGrid"></div>
+        </div>
+
+        <!-- ========== MY APPLICATIONS ========== -->
+        <div id="applicationsView" class="view">
+          <div class="page-intro">
+            <span class="eyebrow">WORKFLOW</span>
+            <h1>My Applications</h1>
+            <p>Track customer requests from submission to completion.</p>
+          </div>
+          <div class="filters">
+            <input id="searchApp" placeholder="Search application or customer…" oninput="filterApplications()">
+            <select id="filterStatus" onchange="filterApplications()">
+              <option value="">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Payment Pending">Payment Pending</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Document Checking">Document Checking</option>
+              <option value="Processing">Processing</option>
+              <option value="Correction Required">Correction Required</option>
+              <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Status</th><th>Amount</th><th>Submitted</th><th>Updated</th><th>Action</th></tr></thead>
+              <tbody id="applicationsRows"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="appPagination"></div>
+        </div>
+
+        <!-- ========== WALLET ========== -->
+        <div id="walletView" class="view">
+          <div class="page-intro">
+            <span class="eyebrow">FINANCE</span>
+            <h1>Wallet & Payments</h1>
+            <p>Manage your service payments and transaction history.</p>
+          </div>
+          <div class="wallet-balance">
+            <div class="wb-bubbles"></div>
+            <div class="wb-info">
+              <small>Available Balance</small>
+              <strong id="walletBalance">₹0.00</strong>
+              <span>Partner Wallet</span>
+            </div>
+            <button class="btn btn-secondary" style="color:#fff;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);white-space:nowrap" onclick="openAddMoneyModal()">+ Add Money</button>
+          </div>
+          <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+            <div class="stat-card"><div class="stat-info"><span>Total Added</span><strong id="walletAdded">₹0</strong></div></div>
+            <div class="stat-card"><div class="stat-info"><span>Total Used</span><strong id="walletUsed">₹0</strong></div></div>
+            <div class="stat-card"><div class="stat-info"><span>Transactions</span><strong id="walletTxnCount">0</strong></div></div>
+          </div>
+          <div class="card-header"><h3>Transaction History</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Transaction ID</th><th>Type</th><th>Application</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="walletTxnRows">
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">No transactions yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========== DOWNLOADS ========== -->
+        <div id="downloadsView" class="view">
+          <div class="page-intro">
+            <span class="eyebrow">FILES</span>
+            <h1>Downloads</h1>
+            <p>Completed results shared by Mohini CSC Centre.</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Result File</th><th>Completed</th><th>Action</th></tr></thead>
+              <tbody id="downloadsRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========== SUPPORT ========== -->
+        <div id="supportView" class="view">
+          <div class="page-intro">
+            <span class="eyebrow">HELP DESK</span>
+            <h1>Support</h1>
+            <p>Need help with an application? Contact Mohini CSC Centre.</p>
+          </div>
+          <div class="service-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-bottom:28px">
+            <div class="card">
+              <h3 style="margin-bottom:8px">Create Support Ticket</h3>
+              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Describe your issue and our team will assist you.</p>
+              <div class="form-group"><label>Application Number</label><input id="ticketAppId" placeholder="e.g. #MCS-1048"></div>
+              <div class="form-group"><label>Issue Type</label><select id="ticketType"><option>Application Status</option><option>Document Issue</option><option>Payment Issue</option><option>Correction Help</option><option>Other</option></select></div>
+              <div class="form-group"><label>Description</label><textarea id="ticketDesc" rows="3" placeholder="Describe your issue…"></textarea></div>
+              <button class="btn btn-primary" onclick="submitTicket()">Submit Ticket</button>
+            </div>
+            <div class="card">
+              <h3 style="margin-bottom:12px">Your Tickets</h3>
+              <div id="ticketsList">
+                <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px">No tickets yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Application Drawer -->
+  <div class="overlay" id="appOverlay" onclick="closeDrawer(event)">
+    <section class="drawer" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <h2 id="drawerTitle">New Application</h2>
+        <button class="drawer-close" onclick="closeDrawer(true)">×</button>
+      </div>
+      <div class="stepper">
+        <div class="step active" id="stepDot1"><div class="step-dot">1</div><span>Customer</span></div>
+        <div class="step-line" id="stepLine1"></div>
+        <div class="step" id="stepDot2"><div class="step-dot">2</div><span>Documents</span></div>
+        <div class="step-line" id="stepLine2"></div>
+        <div class="step" id="stepDot3"><div class="step-dot">3</div><span>Review</span></div>
+        <div class="step-line" id="stepLine3"></div>
+        <div class="step" id="stepDot4"><div class="step-dot">4</div><span>Payment</span></div>
+      </div>
+      <div class="drawer-body">
+        <form id="applicationForm" onsubmit="return false">
+
+          <!-- Step 1: Customer Details -->
+          <div class="form-step active" id="formStep1">
+            <div class="notice"><b>Customer Information</b><span>Enter details exactly as provided by the customer.</span></div>
+            <div class="form-group"><label>Customer Full Name *</label><input id="custName" required placeholder="Enter full name"></div>
+            <div class="form-row">
+              <div class="form-group"><label>Mobile Number *</label><input id="custMobile" required inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div>
+              <div class="form-group"><label>Email (optional)</label><input id="custEmail" type="email" placeholder="customer@email.com"></div>
+            </div>
+            <div class="form-group"><label>Service Request Type *</label><select id="requestType"></select><div id="reqPriceDisplay" style="margin-top:6px"></div></div>
+            <div class="form-group"><label>Application Note</label><textarea id="custNote" rows="3" placeholder="Optional note for processing team…"></textarea></div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" onclick="closeDrawer()">Cancel</button>
+              <button class="btn btn-primary" onclick="goStep(2)">Continue to Documents →</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Documents -->
+          <div class="form-step" id="formStep2">
+            <div class="notice"><b>Required Documents</b><span>Upload clear, readable documents applicable to this request.</span></div>
+            <div id="docUploadList">
+              <label class="upload-box" id="uploadDoc1" data-required="true">
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleUpload(this,'uploadDoc1')">
+                <div class="upload-icon">↑</div>
+                <div class="upload-info"><b>Existing Aadhaar Copy</b><small>JPG, PNG or PDF · Required</small></div>
+                <span class="upload-status">Browse</span>
+              </label>
+              <label class="upload-box" id="uploadDoc2" data-required="true">
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleUpload(this,'uploadDoc2')">
+                <div class="upload-icon">↑</div>
+                <div class="upload-info"><b>Proof of Identity / Address</b><small>Upload applicable supporting proof · Required</small></div>
+                <span class="upload-status">Browse</span>
+              </label>
+              <label class="upload-box" id="uploadDoc3">
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleUpload(this,'uploadDoc3')">
+                <div class="upload-icon">↑</div>
+                <div class="upload-info"><b>Additional Supporting Document</b><small>Only if applicable to the request · Optional</small></div>
+                <span class="upload-status">Browse</span>
+              </label>
+            </div>
+            <div style="background:var(--bg);padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:12px">
+              <p style="font-size:12px;color:var(--text-muted)">🔒 Documents should be encrypted, access-controlled and retained only as long as legally required in production.</p>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+              <button class="btn btn-primary" onclick="goStep(3)">Review Application →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Review -->
+          <div class="form-step" id="formStep3">
+            <div class="notice"><b>Review & Declaration</b><span>Verify all information before proceeding to payment.</span></div>
+            <div id="reviewBox" style="margin-bottom:16px"></div>
+            <label class="check-label">
+              <input type="checkbox" id="declaration" onchange="togglePay()">
+              <span>I confirm that the customer details and uploaded documents have been provided for this service request and I have checked them before submission.</span>
+            </label>
+            <div class="locked-state" id="lockedPay">
+              <span>🔒 Payment is locked</span>
+              <small>Complete the declaration above to unlock payment.</small>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+              <button class="btn btn-primary" id="payBtn" disabled onclick="goStep(4)">Continue to Payment →</button>
+            </div>
+          </div>
+
+          <!-- Step 4: Payment -->
+          <div class="form-step" id="formStep4">
+            <div class="notice"><b>Payment</b><span>Complete payment to submit your application.</span></div>
+            <div id="paymentSummary" style="text-align:center;padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px">
+              <p style="font-size:12px;color:var(--text-muted)">Application Fee</p>
+              <p style="font-size:22px;font-weight:800;color:var(--navy)" id="paymentAmount">₹120</p>
+            </div>
+            <div class="payment-methods">
+              <button class="payment-method selected" onclick="selectPayment(this,'Razorpay')"><b>Razorpay</b><small>UPI / Card / Netbanking / Wallet</small></button>
+              <button class="payment-method" onclick="selectPayment(this,'Wallet')"><b>Wallet</b><small>Use partner balance</small></button>
+            </div>
+            <div style="text-align:center;margin:12px 0">
+              <small style="color:var(--text-muted)">Test Mode — Use Razorpay test cards for testing.</small>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" onclick="goStep(3)">← Back</button>
+              <button class="btn btn-success btn-lg" id="paySubmitBtn" onclick="submitApplication()">✓ Pay & Submit</button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- Application Detail Modal -->
+  <div class="modal-overlay" id="appDetailModal">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalAppTitle">Application Details</h3>
+        <button class="drawer-close" onclick="closeModal('appDetailModal')">×</button>
+      </div>
+      <div class="modal-body" id="modalAppBody"></div>
+    </div>
+  </div>
+
+  <!-- Add Money Modal -->
+  <div class="modal-overlay" id="addMoneyModal">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-header">
+        <h3>Add Money to Wallet</h3>
+        <button class="drawer-close" onclick="closeModal('addMoneyModal')">×</button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Enter amount and pay via Razorpay to add to your wallet.</p>
+        <div class="form-group" style="text-align:left">
+          <label>Amount (₹)</label>
+          <input type="number" id="addMoneyAmount" placeholder="e.g. 500" min="10" style="font-size:18px;font-weight:700;text-align:center">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addMoneyAmount').value='100'">₹100</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addMoneyAmount').value='500'">₹500</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addMoneyAmount').value='1000'">₹1000</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addMoneyAmount').value='2000'">₹2000</button>
+        </div>
+        <button class="btn btn-success btn-lg" style="width:100%;margin-top:20px" onclick="payAddMoney()">Pay via Razorpay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Re-upload Modal -->
+  <div class="modal-overlay" id="reuploadModal" onclick="if(event.target===this)closeModal('reuploadModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
+      <div class="modal-header">
+        <h3>Re-upload Documents</h3>
+        <button class="drawer-close" onclick="closeModal('reuploadModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="reuploadAppId">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Upload corrected documents for this application.</p>
+        <div id="reuploadDocList"></div>
+        <p id="reuploadError" style="color:var(--danger);font-size:12px;display:none;margin-top:8px"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('reuploadModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReupload()">Resubmit Documents</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/partner.js"></script>
+  <script>
+    document.getElementById('pageGreeting').textContent = getGreeting() + ', Partner';
+  </script>
+</body>
+</html>

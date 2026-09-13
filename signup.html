@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mohini CSC Centre — Signup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Inter',system-ui,sans-serif;
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:20px;
+      position:relative;
+      overflow-y:auto;
+    }
+
+    .bg{position:fixed;inset:0;z-index:-2;background:url('logingbackground.png') center/cover no-repeat}
+    .bg::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,25,60,.85) 0%,rgba(15,79,170,.75) 50%,rgba(124,58,237,.65) 100%)}
+
+    .particles{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+    .particle{position:absolute;border-radius:50%;background:rgba(255,255,255,.08);animation:floatUp linear infinite}
+    .particle:nth-child(1){width:6px;height:6px;left:10%;animation-duration:12s;animation-delay:0s}
+    .particle:nth-child(2){width:4px;height:4px;left:25%;animation-duration:15s;animation-delay:2s}
+    .particle:nth-child(3){width:8px;height:8px;left:40%;animation-duration:10s;animation-delay:4s}
+    .particle:nth-child(4){width:5px;height:5px;left:55%;animation-duration:14s;animation-delay:1s}
+    .particle:nth-child(5){width:3px;height:3px;left:70%;animation-duration:11s;animation-delay:3s}
+    .particle:nth-child(6){width:7px;height:7px;left:85%;animation-duration:13s;animation-delay:5s}
+    .particle:nth-child(7){width:4px;height:4px;left:15%;animation-duration:16s;animation-delay:6s}
+    .particle:nth-child(8){width:6px;height:6px;left:60%;animation-duration:9s;animation-delay:1.5s}
+
+    @keyframes floatUp{
+      0%{transform:translateY(100vh) scale(0);opacity:0}
+      10%{opacity:1}90%{opacity:1}
+      100%{transform:translateY(-10vh) scale(1);opacity:0}
+    }
+
+    .signup-wrapper{width:100%;max-width:460px;animation:cardAppear .7s cubic-bezier(.22,1,.36,1) forwards;opacity:0;transform:translateY(30px) scale(.97)}
+    @keyframes cardAppear{to{opacity:1;transform:translateY(0) scale(1)}}
+
+    .login-brand{text-align:center;margin-bottom:24px}
+    .login-brand .logo-wrap{width:80px;height:80px;margin:0 auto 16px;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border-radius:20px;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;animation:logoFloat 3s ease-in-out infinite;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+    .login-brand .logo-wrap img{width:50px;height:50px;object-fit:contain;border-radius:10px}
+    @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+    .login-brand h1{font-size:24px;font-weight:900;letter-spacing:.03em;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+    .login-brand p{font-size:13px;color:rgba(255,255,255,.7);margin-top:4px}
+
+    .signup-card{
+      background:rgba(255,255,255,.1);
+      backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:20px;padding:32px 28px;
+      box-shadow:0 8px 32px rgba(0,0,0,.25);
+      animation:cardSlide .8s cubic-bezier(.22,1,.36,1) .15s forwards;
+      opacity:0;transform:translateY(20px);
+    }
+    @keyframes cardSlide{to{opacity:1;transform:translateY(0)}}
+
+    .warn-box{
+      background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+      border-radius:12px;padding:12px 14px;margin-bottom:20px;
+      display:flex;gap:10px;align-items:flex-start;
+      animation:fieldIn .6s ease .25s forwards;opacity:0;
+    }
+    .warn-box .icon{font-size:18px;flex-shrink:0;margin-top:1px}
+    .warn-box b{font-size:12px;color:#fbbf24;display:block;margin-bottom:2px}
+    .warn-box p{font-size:11px;color:rgba(255,255,255,.6);line-height:1.5}
+
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    .form-group{margin-bottom:16px;animation:fieldIn .6s ease forwards;opacity:0}
+    .form-group:nth-child(1){animation-delay:.3s}
+    .form-group:nth-child(2){animation-delay:.38s}
+    .form-group:nth-child(3){animation-delay:.46s}
+    .form-group:nth-child(4){animation-delay:.54s}
+    .form-group:nth-child(5){animation-delay:.62s}
+    .form-group:nth-child(6){animation-delay:.7s}
+    .form-group:nth-child(7){animation-delay:.78s}
+    @keyframes fieldIn{to{opacity:1}}
+
+    .form-group label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:6px}
+    .form-group input{
+      width:100%;padding:12px 14px;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+      border-radius:12px;font-size:13px;color:#fff;
+      transition:all .3s;font-family:inherit;backdrop-filter:blur(4px);
+    }
+    .form-group input::placeholder{color:rgba(255,255,255,.4)}
+    .form-group input:focus{outline:none;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);box-shadow:0 0 0 4px rgba(255,255,255,.08)}
+
+    .btn{
+      width:100%;padding:14px;border:none;border-radius:12px;
+      font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+      position:relative;overflow:hidden;transition:all .25s;
+      animation:fieldIn .6s ease .85s forwards;opacity:0;
+    }
+    .btn-primary{background:linear-gradient(135deg,#1665d8 0%,#7c3aed 100%);color:#fff;box-shadow:0 4px 20px rgba(22,101,216,.4)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(22,101,216,.5)}
+    .btn-primary:active{transform:translateY(0) scale(.98)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+    .btn-shine{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shine 3s infinite}
+    @keyframes shine{0%{left:-100%}30%,100%{left:100%}}
+
+    .login-link{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,.6);animation:fieldIn .6s ease .95s forwards;opacity:0}
+    .login-link a{color:#fff;font-weight:600;text-decoration:none;position:relative}
+    .login-link a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:#fff;border-radius:2px;transition:width .3s}
+    .login-link a:hover::after{width:100%}
+
+    .footer{text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:20px;animation:fieldIn .6s ease 1s forwards;opacity:0}
+
+    .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(23,32,51,.9);color:#fff;padding:12px 28px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:999;opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .error-text{color:#fca5a5;font-size:11px;margin-top:5px;display:none}
+
+    .eye-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:4px;transition:color .2s}
+    .eye-toggle:hover{color:#fff}
+    .input-wrap{position:relative}
+
+    .pw-strength{height:3px;border-radius:2px;margin-top:6px;background:rgba(255,255,255,.1);overflow:hidden;transition:all .3s}
+    .pw-strength .bar{height:100%;border-radius:2px;transition:all .4s;width:0}
+
+    @media(max-width:768px){
+      .signup-layout{flex-direction:column;align-items:center}
+      .signup-right{max-width:460px;width:100%;margin-top:20px}
+      .signup-card{padding:24px 18px}
+      .login-brand h1{font-size:20px}
+      .form-row{grid-template-columns:1fr}
+      #partnerCard{width:300px!important}
+    }
+    #buyModal input:focus{border-color:#1665d8!important;background:#fff!important;box-shadow:0 0 0 3px rgba(22,101,216,.15)!important}
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="particles">
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div>
+  </div>
+
+  <div class="signup-wrapper" style="max-width:920px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;justify-content:center">
+    <div style="flex:1;min-width:340px;max-width:460px">
+    <div class="login-brand">
+      <div class="logo-wrap">
+        <img src="logo.png" alt="Mohini CSC Centre">
+      </div>
+      <h1>MOHINI CSC CENTRE</h1>
+      <p>Established 2017 · Partner Signup</p>
+    </div>
+
+    <div class="signup-card">
+      <!-- STEP 1: Signup Form -->
+      <div id="signupStep1">
+      <div class="warn-box">
+        <span class="icon">⚠️</span>
+        <div>
+          <b>Enter correct email address</b>
+          <p>Verification code will be sent here. Wrong email = no access to your account.</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="signupName" placeholder="Enter your full name" autocomplete="name">
+        <div class="error-text" id="nameError">Please enter your name</div>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input type="email" id="signupEmail" placeholder="your@email.com" autocomplete="email">
+        <div class="error-text" id="emailError">Please enter a valid email address</div>
+      </div>
+
+      <div class="form-group">
+        <label>Mobile Number *</label>
+        <input type="tel" id="signupMobile" placeholder="10-digit mobile number" maxlength="10" autocomplete="tel">
+        <div class="error-text" id="mobileError">Please enter a valid 10-digit mobile number</div>
+      </div>
+
+      <div class="form-group">
+        <label>Partner ID (optional)</label>
+        <input type="text" id="signupPartnerId" placeholder="e.g. MCS-001">
+      </div>
+
+      <div class="form-group">
+        <label>Password *</label>
+        <div class="input-wrap">
+          <input type="password" id="signupPassword" placeholder="Min 6 characters" autocomplete="new-password" oninput="checkStrength()">
+          <button class="eye-toggle" type="button" onclick="togglePass('signupPassword','eyeBtn1')" id="eyeBtn1">👁</button>
+        </div>
+        <div class="pw-strength"><div class="bar" id="pwBar"></div></div>
+        <div class="error-text" id="passwordError">Password must be at least 6 characters</div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password *</label>
+        <div class="input-wrap">
+          <input type="password" id="signupConfirm" placeholder="Re-enter password" autocomplete="new-password">
+          <button class="eye-toggle" type="button" onclick="togglePass('signupConfirm','eyeBtn2')" id="eyeBtn2">👁</button>
+        </div>
+        <div class="error-text" id="confirmError">Passwords do not match</div>
+      </div>
+
+      <button class="btn btn-primary" id="signupBtn" onclick="doSignup()">
+        <span class="btn-shine"></span>
+        Create Account
+      </button>
+
+      <p class="login-link">Already have an account? <a href="login.html">Login here</a></p>
+      </div>
+
+      <!-- STEP 2: OTP Verification -->
+      <div id="signupStep2" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <h3 style="font-size:18px;font-weight:700;color:#172033;margin-bottom:8px">Verify Your Email</h3>
+        <p style="font-size:13px;color:#64748b;margin-bottom:20px">We sent a 6-digit code to<br><b id="otpEmail"></b></p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+          <input type="text" maxlength="1" id="otp1" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px" oninput="if(this.value.length===1)document.getElementById('otp2').focus()">
+          <input type="text" maxlength="1" id="otp2" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px" oninput="if(this.value.length===1)document.getElementById('otp3').focus()">
+          <input type="text" maxlength="1" id="otp3" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px" oninput="if(this.value.length===1)document.getElementById('otp4').focus()">
+          <input type="text" maxlength="1" id="otp4" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px" oninput="if(this.value.length===1)document.getElementById('otp5').focus()">
+          <input type="text" maxlength="1" id="otp5" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px" oninput="if(this.value.length===1)document.getElementById('otp6').focus()">
+          <input type="text" maxlength="1" id="otp6" style="width:48px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:10px">
+        </div>
+        <div class="error-text" id="otpError" style="display:none;margin-bottom:12px">Invalid code. Please try again.</div>
+        <button class="btn btn-primary" id="verifyBtn" onclick="verifyAndCreate()" style="margin-bottom:12px">Verify & Create Account</button>
+        <p style="font-size:13px;color:#64748b"><a href="javascript:void(0)" onclick="goBackToSignup()" style="color:#1665d8;font-weight:600">← Back to Signup</a></p>
+      </div>
+    </div>
+
+    <p class="footer">© 2026 Mohini CSC Centre. All rights reserved.</p>
+    </div>
+
+    <div class="signup-right" style="flex:0 0 340px;max-width:400px;animation:cardSlide .8s cubic-bezier(.22,1,.36,1) .3s forwards;opacity:0;transform:translateY(20px)">
+      <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:28px 24px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:60px;height:60px;margin:0 auto 12px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 20px rgba(251,191,36,.4)">🏅</div>
+          <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Buy Partner ID</h2>
+          <p style="font-size:12px;color:rgba(255,255,255,.6)">Unlock exclusive partner benefits</p>
+        </div>
+
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px;margin-bottom:18px">
+          <div style="text-align:center;margin-bottom:14px">
+            <span style="font-size:13px;color:rgba(255,255,255,.6)">Starting at</span><br>
+            <span style="font-size:32px;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="partnerPriceDisplay">₹499</span>
+            <span style="font-size:12px;color:rgba(255,255,255,.5);display:block;margin-top:2px">one-time payment</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:#fbbf24">✨ Partner Benefits</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:16px;flex-shrink:0;margin-top:1px">💰</span>
+              <div><b style="font-size:13px;color:#fff">Discount on All Services</b><br><span style="font-size:11px;color:rgba(255,255,255,.6)">Get special partner pricing on every service — save more on each application</span></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:16px;flex-shrink:0;margin-top:1px">⚡</span>
+              <div><b style="font-size:13px;color:#fff">Priority Processing</b><br><span style="font-size:11px;color:rgba(255,255,255,.6)">Your applications get processed faster than regular users</span></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:16px;flex-shrink:0;margin-top:1px">📊</span>
+              <div><b style="font-size:13px;color:#fff">Dashboard & Analytics</b><br><span style="font-size:11px;color:rgba(255,255,255,.6)">Track all your applications, earnings, and wallet in one place</span></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:16px;flex-shrink:0;margin-top:1px">🏦</span>
+              <div><b style="font-size:13px;color:#fff">Wallet & Payments</b><br><span style="font-size:11px;color:rgba(255,255,255,.6)">Add money to wallet, pay for services, and track all transactions</span></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:16px;flex-shrink:0;margin-top:1px">🎫</span>
+              <div><b style="font-size:13px;color:#fff">Support Tickets</b><br><span style="font-size:11px;color:rgba(255,255,255,.6)">Raise tickets for any issue and get quick resolution from admin</span></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="buyPartnerId()" style="background:linear-gradient(135deg,#f59e0b 0%,#f97316 100%);box-shadow:0 4px 20px rgba(245,158,11,.4)">
+          <span class="btn-shine"></span>
+          🛒 Buy Partner ID
+        </button>
+
+        <p style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:12px">Secure payment via Razorpay</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Buy Partner ID Modal -->
+  <div id="buyModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:cardSlide .4s ease;color:#172033">
+      <div id="buyStep1">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:50px;height:50px;margin:0 auto 10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">🏅</div>
+          <h2 style="font-size:20px;font-weight:800;color:#172033">Buy Partner ID</h2>
+          <p style="font-size:13px;color:#64748b;margin-top:4px">Fill in your details to proceed</p>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Full Name *</label>
+          <input type="text" id="buyName" placeholder="Enter your full name" style="width:100%;padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;color:#172033;background:#f8fafc;outline:none;transition:all .2s" onfocus="this.style.borderColor='#1665d8'" onblur="this.style.borderColor='#e2e8f0'">
+          <div class="error-text" id="buyNameErr" style="color:#ef4444;font-size:11px;margin-top:4px;display:none">Please enter your name</div>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Phone Number *</label>
+          <input type="tel" id="buyPhone" placeholder="10-digit mobile number" maxlength="10" style="width:100%;padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;color:#172033;background:#f8fafc;outline:none;transition:all .2s" onfocus="this.style.borderColor='#1665d8'" onblur="this.style.borderColor='#e2e8f0'">
+          <div class="error-text" id="buyPhoneErr" style="color:#ef4444;font-size:11px;margin-top:4px;display:none">Please enter a valid 10-digit number</div>
+        </div>
+        <button id="payBtn" onclick="proceedToPayment()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#1665d8,#7c3aed);color:#fff;box-shadow:0 4px 20px rgba(22,101,216,.4);transition:all .25s">Proceed to Payment →</button>
+        <button onclick="closeBuyModal()" style="width:100%;padding:10px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#64748b;margin-top:8px;transition:all .2s">Cancel</button>
+      </div>
+      <div id="buyStep2" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Partner ID Card Modal -->
+  <div id="cardModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:20px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:cardSlide .4s ease">
+      <div id="partnerCardContainer"></div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="downloadCard()" style="flex:1;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#1665d8,#7c3aed);color:#fff;transition:all .2s">📥 Download Card</button>
+        <button onclick="printCard()" style="flex:1;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:#f1f5f9;color:#172033;border:1px solid #e2e8f0;transition:all .2s">🖨 Print Card</button>
+      </div>
+      <button onclick="closeCardModal()" style="width:100%;padding:10px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#64748b;margin-top:8px;transition:all .2s">Close</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    emailjs.init('1krGbBYt3akDo6BMT');
+    var SVC='service_ejlycjk',TPL='template_051qxhm';
+
+    function togglePass(id,btnId){
+      const inp=document.getElementById(id);
+      const btn=document.getElementById(btnId);
+      if(inp.type==='password'){inp.type='text';btn.textContent='🙈'}
+      else{inp.type='password';btn.textContent='👁'}
+    }
+
+    function checkStrength(){
+      const pw=document.getElementById('signupPassword').value;
+      const bar=document.getElementById('pwBar');
+      let s=0;
+      if(pw.length>=6)s++;
+      if(pw.length>=8)s++;
+      if(/[A-Z]/.test(pw)&&/[a-z]/.test(pw))s++;
+      if(/[0-9]/.test(pw))s++;
+      if(/[^A-Za-z0-9]/.test(pw))s++;
+      const pct=s*20;
+      bar.style.width=pct+'%';
+      bar.style.background=pct<=20?'#ef4444':pct<=40?'#f97316':pct<=60?'#eab308':pct<=80?'#22c55e':'#10b981';
+    }
+
+    // ---- Step 1: Send OTP ----
+    async function doSignup(){
+      var name=document.getElementById('signupName').value.trim();
+      var email=document.getElementById('signupEmail').value.trim();
+      var mobile=document.getElementById('signupMobile').value.trim();
+      var partnerId=document.getElementById('signupPartnerId').value.trim();
+      var password=document.getElementById('signupPassword').value;
+      var confirm=document.getElementById('signupConfirm').value;
+      document.querySelectorAll('.error-text').forEach(function(e){e.style.display='none'});
+
+      var valid=true;
+      if(!name){document.getElementById('nameError').style.display='block';valid=false}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){document.getElementById('emailError').style.display='block';valid=false}
+      if(!/^\d{10}$/.test(mobile)){document.getElementById('mobileError').style.display='block';valid=false}
+      if(password.length<6){document.getElementById('passwordError').style.display='block';valid=false}
+      if(password!==confirm){document.getElementById('confirmError').style.display='block';valid=false}
+      if(!valid)return;
+
+      var btn=document.getElementById('signupBtn');
+      btn.disabled=true;btn.textContent='Sending verification code...';
+
+      // Generate OTP and store temporarily
+      var otp = String(Math.floor(100000 + Math.random() * 900000));
+      window._pendingSignup = { name:name, email:email, mobile:mobile, partnerId:partnerId, password:password, otp:otp };
+
+      // Send OTP via EmailJS
+      emailjs.send(SVC, TPL, {
+        to_name: name, to_email: email, verification_code: otp,
+        from_name: 'Mohini CSC Centre',
+        subject: 'Your Verification Code - Mohini CSC Centre',
+        message: 'Hello ' + name + ',\n\nYour verification code is: ' + otp + '\n\nThis code expires in 10 minutes.\n\n-Mohini CSC Centre'
+      }).then(function(){
+        toast('Verification code sent to ' + email + '!');
+        document.getElementById('signupStep1').style.display = 'none';
+        document.getElementById('signupStep2').style.display = 'block';
+        document.getElementById('otpEmail').textContent = email;
+        document.getElementById('otp1').focus();
+      }).catch(function(err){
+        console.error('EmailJS error:', err);
+        toast('Email failed: ' + (err.text || err.message || 'Check console'));
+        btn.disabled=false;btn.textContent='Create Account →';
+      });
+    }
+
+    // ---- Step 2: Verify OTP and create account ----
+    async function verifyAndCreate(){
+      var otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(function(id){ return document.getElementById(id).value; }).join('');
+      if(otp.length !== 6){
+        document.getElementById('otpError').style.display='block';
+        document.getElementById('otpError').textContent='Please enter all 6 digits.';
+        return;
+      }
+
+      var data = window._pendingSignup;
+      if(!data){ toast('Session expired. Please go back.'); return; }
+
+      if(otp !== data.otp){
+        document.getElementById('otpError').style.display='block';
+        document.getElementById('otpError').textContent='Invalid code. Please try again.';
+        return;
+      }
+
+      document.getElementById('otpError').style.display='none';
+      var btn=document.getElementById('verifyBtn');
+      btn.disabled=true;btn.textContent='Creating account...';
+
+      try {
+        var cred = await Promise.race([
+          fbSignUp(data.email, data.password, data.name),
+          new Promise(function(_, reject) { setTimeout(function(){ reject(new Error('Timeout')); }, 15000); })
+        ]);
+        var uid = cred.user.uid;
+
+        // Save profile to Firestore (non-blocking)
+        fsSetDoc('partners', uid, {
+          name: data.name, email: data.email, mobile: data.mobile,
+          partnerId: data.partnerId || null, status: 'Active',
+          wallet: 0, apps: 0,
+          joined: new Date().toISOString(), createdAt: new Date().toISOString()
+        }).catch(function(e){});
+
+        if(data.partnerId){
+          fsSetDoc('partnerIds', data.partnerId, { usedBy: uid }).catch(function(e){});
+        }
+
+        try { await cred.user.sendEmailVerification(); } catch(e) {}
+        await fbSignOut();
+        window._pendingSignup = null;
+
+        // Show success
+        document.getElementById('otpSection').style.display='none';
+        document.getElementById('verifyBtn').style.display='none';
+        document.getElementById('otpInfo').style.display='none';
+        document.getElementById('successBox').style.display='block';
+        toast('Account created! You can now login.');
+        setTimeout(function(){window.location.href='login.html'},2000);
+
+      } catch(err){
+        btn.disabled=false;btn.textContent='Verify & Create Account';
+        var msg = err.message || 'Signup failed';
+        if(msg.includes('email-already-in-use')){
+          toast('This email is already registered. Please login.');
+          setTimeout(function(){window.location.href='login.html'},1500);
+        } else {
+          toast('Error: ' + msg);
+        }
+      }
+    }
+
+    function goBackToSignup(){
+      window._pendingSignup = null;
+      document.getElementById('signupStep2').style.display='none';
+      document.getElementById('signupStep1').style.display='block';
+      document.getElementById('signupBtn').disabled=false;
+      document.getElementById('signupBtn').textContent='Create Account →';
+      ['otp1','otp2','otp3','otp4','otp5','otp6'].forEach(function(id){ document.getElementById(id).value=''; });
+    }
+
+    var toastTimer;
+    function toast(msg){var t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},5000)}
+
+    // Load Partner ID price from Firestore (with fallback)
+    var _partnerPrice = 499;
+    async function loadPartnerPrice() {
+      try {
+        var settings = await Promise.race([
+          fsGetDoc('settings', 'general'),
+          new Promise(function(_,re){ setTimeout(function(){re('timeout')},3000) })
+        ]);
+        if (settings && settings.partnerIdPrice) _partnerPrice = settings.partnerIdPrice;
+        document.getElementById('partnerPriceDisplay').textContent = '₹' + _partnerPrice;
+      } catch(e) {
+        document.getElementById('partnerPriceDisplay').textContent = '₹' + _partnerPrice;
+      }
+      return _partnerPrice;
+    }
+    loadPartnerPrice();
+
+    // Open Buy Modal
+    function buyPartnerId() {
+      _rzpBusy = false;
+      var payBtn = document.getElementById('payBtn');
+      if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Proceed to Payment →'; }
+      document.getElementById('buyModal').style.display = 'flex';
+      document.getElementById('buyStep1').style.display = 'block';
+      document.getElementById('buyStep2').style.display = 'none';
+      document.getElementById('buyName').value = '';
+      document.getElementById('buyPhone').value = '';
+      document.querySelectorAll('#buyModal .error-text').forEach(function(e){e.style.display='none'});
+    }
+
+    function closeBuyModal() {
+      document.getElementById('buyModal').style.display = 'none';
+    }
+
+    // Proceed to payment after validation
+    var _rzpBusy = false;
+    async function proceedToPayment() {
+      if (_rzpBusy) return;
+      var name = document.getElementById('buyName').value.trim();
+      var phone = document.getElementById('buyPhone').value.trim();
+      document.querySelectorAll('#buyModal .error-text').forEach(function(e){e.style.display='none'});
+      var ok = true;
+      if (!name) { document.getElementById('buyNameErr').style.display = 'block'; ok = false; }
+      if (!/^\d{10}$/.test(phone)) { document.getElementById('buyPhoneErr').style.display = 'block'; ok = false; }
+      if (!ok) return;
+
+      _rzpBusy = true;
+
+      var price = _partnerPrice;
+
+      document.getElementById('buyStep1').style.display = 'none';
+      document.getElementById('buyStep2').style.display = 'block';
+      document.getElementById('buyStep2').innerHTML = '<div style="text-align:center;padding:20px"><p style="color:#64748b;font-size:14px">Redirecting to Razorpay...</p></div>';
+
+      var options = {
+        key: 'rzp_test_TbTdqkIM1BJGI4',
+        amount: price * 100,
+        currency: 'INR',
+        name: 'Mohini CSC Centre',
+        description: 'Partner ID — ' + name,
+        image: 'logo.png',
+        handler: function(response) {
+          _rzpBusy = false;
+          var partnerId = generateUniqueId();
+          var issueDate = new Date();
+          var validTill = new Date();
+          validTill.setFullYear(validTill.getFullYear() + 1);
+
+          // Save to Firestore (non-blocking)
+          fsSetDoc('partnerIds', partnerId, {
+            partnerId: partnerId, name: name, phone: phone,
+            paymentId: response.razorpay_payment_id, price: price,
+            issueDate: issueDate.toISOString(), validTill: validTill.toISOString(),
+            usedBy: null, createdAt: new Date().toISOString()
+          }).catch(function(e){ console.warn('Firestore save skipped:', e); });
+
+          fsSetDoc('payments', response.razorpay_payment_id, {
+            id: response.razorpay_payment_id, type: 'partner_id',
+            partner: name, partnerPhone: phone, amount: price,
+            method: 'Razorpay', status: 'Success', gateway: 'Razorpay',
+            date: new Date().toISOString(), createdAt: new Date().toISOString()
+          }).catch(function(e){});
+
+          document.getElementById('signupPartnerId').value = partnerId;
+          closeBuyModal();
+          showPartnerCard(partnerId, name, phone, issueDate, validTill);
+        },
+        prefill: { name: name, contact: phone },
+        theme: { color: '#1665d8' },
+        modal: {
+          ondismiss: function() {
+            _rzpBusy = false;
+            closeBuyModal();
+          }
+        }
+      };
+      var rzp = new Razorpay(options);
+      rzp.on('payment.failed', function() {
+        _rzpBusy = false;
+        closeBuyModal();
+        toast('Payment failed. Please try again.');
+      });
+      rzp.open();
+    }
+
+    // Generate unique Partner ID (local, no Firestore dependency)
+    function generateUniqueId() {
+      var id;
+      do { id = 'MCS-' + String(Math.floor(1000 + Math.random() * 9000)); } while(false);
+      return id;
+    }
+
+    // Show Partner ID Card
+    async function showPartnerCard(partnerId, name, phone, issueDate, validTill) {
+      var supportPhone = '9876543210';
+      var website = 'www.mohinicsc.in';
+      try {
+        var settings = await Promise.race([
+          fsGetDoc('settings', 'general'),
+          new Promise(function(_,re){ setTimeout(function(){re('timeout')},3000) })
+        ]);
+        if (settings) {
+          supportPhone = settings.phone || supportPhone;
+          website = settings.website || website;
+        }
+      } catch(e) {}
+
+      var cardHTML = '<div id="partnerCard" style="width:380px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.15);font-family:Inter,system-ui,sans-serif">';
+      cardHTML += '<div style="background:linear-gradient(135deg,#0f2942 0%,#1665d8 100%);padding:20px 24px;text-align:center">';
+      cardHTML += '<div style="width:60px;height:60px;margin:0 auto 8px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center"><img src="logo.png" style="width:44px;height:44px;object-fit:contain;border-radius:50%"></div>';
+      cardHTML += '<h2 style="color:#fff;font-size:18px;font-weight:800;margin:0">MOHINI CSC</h2>';
+      cardHTML += '<p style="color:rgba(255,255,255,.7);font-size:10px;margin-top:2px;letter-spacing:1px">SAB KAAM • EK HI JAGAH</p>';
+      cardHTML += '</div>';
+      cardHTML += '<div style="background:#fbbf24;color:#0f2942;text-align:center;padding:8px;font-size:12px;font-weight:800;letter-spacing:1.5px">PARTNER DETAILS</div>';
+      cardHTML += '<div style="padding:20px 24px">';
+      cardHTML += '<table style="width:100%;font-size:13px;color:#374151;border-collapse:collapse">';
+      cardHTML += '<tr><td style="padding:6px 0;width:35%;color:#64748b">👤 Name</td><td style="padding:6px 0;font-weight:600">: ' + escHtml(name) + '</td></tr>';
+      cardHTML += '<tr><td style="padding:6px 0;color:#64748b">🆔 Partner ID</td><td style="padding:6px 0;font-weight:700;color:#1665d8;font-size:14px">: ' + escHtml(partnerId) + '</td></tr>';
+      cardHTML += '<tr><td style="padding:6px 0;color:#64748b">📞 Mobile No.</td><td style="padding:6px 0;font-weight:600">: +91 ' + escHtml(phone) + '</td></tr>';
+      cardHTML += '<tr><td style="padding:6px 0;color:#64748b">📅 Issue Date</td><td style="padding:6px 0;font-weight:600">: ' + issueDate.toLocaleDateString('en-IN') + '</td></tr>';
+      cardHTML += '<tr><td style="padding:6px 0;color:#64748b">📅 Valid Till</td><td style="padding:6px 0;font-weight:600">: ' + validTill.toLocaleDateString('en-IN') + '</td></tr>';
+      cardHTML += '</table>';
+      cardHTML += '<div style="border-top:1px solid #e2e8f0;margin-top:14px;padding-top:14px">';
+      cardHTML += '<p style="font-size:11px;font-weight:700;color:#172033;margin-bottom:6px">TERMS & CONDITIONS</p>';
+      cardHTML += '<ul style="font-size:10px;color:#64748b;margin:0;padding-left:16px;line-height:1.8">';
+      cardHTML += '<li>This card is only valid for the registered partner.</li>';
+      cardHTML += '<li>Do not share your Partner ID with anyone.</li>';
+      cardHTML += '<li>Misuse of this card may result in termination.</li>';
+      cardHTML += '<li>For support, contact Mohini CSC Helpdesk.</li>';
+      cardHTML += '</ul></div>';
+      cardHTML += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0">';
+      cardHTML += '<div style="font-size:11px;color:#64748b"><b style="color:#172033">📞 Support</b><br>+91 ' + escHtml(supportPhone) + '</div>';
+      cardHTML += '<div style="font-size:11px;color:#64748b;text-align:right"><b style="color:#172033">🌐 Visit Us</b><br>' + escHtml(website) + '</div>';
+      cardHTML += '</div>';
+      cardHTML += '</div>';
+      cardHTML += '<div style="background:linear-gradient(135deg,#0f2942 0%,#1665d8 100%);color:rgba(255,255,255,.8);text-align:center;padding:10px;font-size:10px;font-weight:600;letter-spacing:.5px">Together for a Digital India ✦</div>';
+      cardHTML += '</div>';
+
+      document.getElementById('partnerCardContainer').innerHTML = cardHTML;
+      document.getElementById('cardModal').style.display = 'flex';
+    }
+
+    // Download Card as image
+    function downloadCard() {
+      var card = document.getElementById('partnerCard');
+      if (!card) return;
+      html2canvas(card, { scale: 2, backgroundColor: null, useCORS: true }).then(function(canvas) {
+        var link = document.createElement('a');
+        link.download = 'Partner-ID-Card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    // Print Card
+    function printCard() {
+      var card = document.getElementById('partnerCard');
+      if (!card) return;
+      var closeTag = '/';
+      var html = '<html><head><title>Partner ID Card</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">' + closeTag + 'head><body style="display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f1f5f9;font-family:Inter,sans-serif">' + card.outerHTML + closeTag + 'body>' + closeTag + 'html>';
+      var win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+
+    function closeCardModal() {
+      document.getElementById('cardModal').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

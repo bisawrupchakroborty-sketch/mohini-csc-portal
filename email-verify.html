@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mohini CSC Centre — Verify Email</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:#f6f8fb;color:#172033;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+
+    .login-wrapper{width:100%;max-width:460px}
+
+    .login-brand{text-align:center;margin-bottom:32px}
+    .login-brand img{width:72px;height:72px;object-fit:contain;margin:0 auto 14px;border-radius:16px;background:#fff;padding:10px;border:1px solid #e2e8f0}
+    .login-brand h1{font-size:22px;font-weight:800;color:#172033;letter-spacing:.02em}
+    .login-brand p{font-size:13px;color:#64748b;margin-top:4px}
+
+    .login-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+
+    .back-btn{background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:16px}
+    .back-btn:hover{color:#1665d8}
+
+    .otp-inputs{display:flex;gap:10px;justify-content:center;margin:20px 0}
+    .otp-inputs input{width:50px;height:54px;text-align:center;font-size:22px;font-weight:700;border:2px solid #e2e8f0;border-radius:12px;background:#fff;transition:border .15s}
+    .otp-inputs input:focus{outline:none;border-color:#1665d8}
+
+    .btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+    .btn-primary{background:#1665d8;color:#fff}
+    .btn-primary:hover{background:#0f4faa;box-shadow:0 4px 12px rgba(22,101,216,.3)}
+    .btn-primary:disabled{background:#93b8e8;cursor:not-allowed;box-shadow:none}
+
+    .resend{text-align:center;font-size:13px;color:#64748b;margin-top:16px}
+    .resend button{background:none;border:none;color:#1665d8;font-weight:600;cursor:pointer;font-size:13px;font-family:inherit}
+    .resend button:hover{text-decoration:underline}
+
+    .error-text{color:#dc2626;font-size:12px;margin-top:6px;display:none;text-align:center}
+
+    .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:#172033;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 15px rgba(0,0,0,.1);z-index:999;opacity:0;pointer-events:none;transition:all .3s}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:20px;text-align:center}
+    .info-box .icon{font-size:28px;margin-bottom:8px}
+    .info-box b{font-size:13px;color:#1e40af;display:block;margin-bottom:4px}
+    .info-box p{font-size:12px;color:#1d4ed8;line-height:1.5}
+
+    .success-box{background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:14px 16px;margin-bottom:20px;text-align:center;display:none}
+    .success-box .icon{font-size:28px;margin-bottom:8px}
+    .success-box b{font-size:13px;color:#166534;display:block;margin-bottom:4px}
+    .success-box p{font-size:12px;color:#15803d;line-height:1.5}
+
+    @media(max-width:480px){.login-card{padding:24px 20px}.otp-inputs input{width:44px;height:48px;font-size:18px}}
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-brand">
+      <img src="logo.png" alt="Mohini CSC Centre">
+      <h1>MOHINI CSC CENTRE</h1>
+      <p>Email Verification</p>
+    </div>
+
+    <div class="login-card">
+      <button class="back-btn" onclick="window.location.href='signup.html'">← Back to Signup</button>
+
+      <div class="info-box" id="infoBox">
+        <div class="icon">📧</div>
+        <b>Check Your Email</b>
+        <p>We sent a verification link to your email. Click the link to verify your account, then go to login.</p>
+      </div>
+
+      <div class="success-box" id="successBox">
+        <div class="icon">✅</div>
+        <b>Email Verified!</b>
+        <p>Your account has been verified. Redirecting to login...</p>
+      </div>
+
+      <div class="otp-inputs" id="otpSection" style="display:none">
+        <input type="text" maxlength="1" id="otp1">
+        <input type="text" maxlength="1" id="otp2">
+        <input type="text" maxlength="1" id="otp3">
+        <input type="text" maxlength="1" id="otp4">
+        <input type="text" maxlength="1" id="otp5">
+        <input type="text" maxlength="1" id="otp6">
+      </div>
+
+      <div class="error-text" id="otpError">Invalid code. Please try again.</div>
+
+      <button class="btn btn-primary" id="verifyBtn" style="display:none" onclick="verifyEmail()">Verify Email</button>
+
+      <div style="margin-top:16px">
+        <a href="login.html" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none">Go to Login</a>
+      </div>
+
+      <div class="resend">
+        <p>Didn't receive email? <button onclick="resendCode()" id="resendBtn">Resend Email</button></p>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:20px">© 2026 Mohini CSC Centre. All rights reserved.</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    var toastTimer;
+    function toast(msg){var t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},3000)}
+
+    // Hide OTP — we use Firebase link verification
+    document.getElementById('otpSection').style.display = 'none';
+    document.getElementById('verifyBtn').style.display = 'none';
+
+    // If user is logged in, check if verified
+    fbOnAuthStateChanged(function(user) {
+      if (user && user.emailVerified) {
+        document.getElementById('infoBox').style.display = 'none';
+        document.getElementById('successBox').style.display = 'block';
+        toast('Email verified! Redirecting to login...');
+        setTimeout(function(){ window.location.href = 'login.html'; }, 2000);
+      }
+    });
+
+    // Resend button
+    document.getElementById('resendBtn').onclick = function() {
+      var user = fbGetUser();
+      if (!user) {
+        toast('Your verification email was sent. Please check inbox and click the link. After that, go to login.');
+        return;
+      }
+      var btn = document.getElementById('resendBtn');
+      btn.disabled = true; btn.textContent = 'Sending...';
+      user.sendEmailVerification().then(function() {
+        toast('Verification email resent!');
+        var sec = 30;
+        btn.textContent = 'Resend in ' + sec + 's';
+        var timer = setInterval(function() {
+          sec--; btn.textContent = 'Resend in ' + sec + 's';
+          if (sec <= 0) { clearInterval(timer); btn.textContent = 'Resend Code'; btn.disabled = false; }
+        }, 1000);
+      }).catch(function() {
+        toast('Failed. Try again.');
+        btn.disabled = false; btn.textContent = 'Resend Code';
+      });
+    };
+  </script>
+</body>
+</html>

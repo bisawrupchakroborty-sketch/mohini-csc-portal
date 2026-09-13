@@ -1,0 +1,323 @@
+/* ============================================
+   MOHINI CSC — Partner Portal Styles
+   ============================================ */
+
+.view { display: none; }
+.view.active { display: block; animation: fadeInView 0.4s ease; }
+
+@keyframes fadeInView {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Quick action on dashboard */
+.hero {
+  background: linear-gradient(135deg, #1665d8, #0f4faa);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  color: #fff;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.hero h1 { font-size: 26px; font-weight: 800; margin: 8px 0 6px; color: #fff; }
+.hero p { font-size: 14px; opacity: .85; margin-bottom: 18px; }
+.hero .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .12em; opacity: .7; }
+
+.hero .btn { background: #fff; color: var(--primary); }
+.hero .btn:hover { background: #f0f4ff; box-shadow: var(--shadow-md); }
+
+/* ========== Wallet Animations ========== */
+.wallet-balance {
+  background: linear-gradient(135deg, #1665d8 0%, #0f4faa 50%, #7c3aed 100%);
+  background-size: 200% 200%;
+  animation: walletGradient 4s ease infinite, slideUp 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-balance > * {
+  position: relative;
+  z-index: 2;
+}
+
+.wallet-balance .wb-bubbles {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wallet-balance .wb-bubbles::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  animation: floatBubble 6s ease-in-out infinite;
+}
+
+.wallet-balance .wb-bubbles::after {
+  content: '';
+  position: absolute;
+  bottom: -60%;
+  left: -10%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+  animation: floatBubble 8s ease-in-out infinite reverse;
+}
+
+@keyframes walletGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatBubble {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+.wallet-balance .wb-info {
+  position: relative;
+  z-index: 2;
+}
+
+.wallet-balance .wb-info strong {
+  font-size: 36px;
+  animation: countPulse 2s ease infinite;
+}
+
+@keyframes countPulse {
+  0%, 100% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+  50% { text-shadow: 0 0 20px rgba(255,255,255,0.15); }
+}
+
+.wallet-balance .btn {
+  animation: slideUp 0.6s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.wallet-balance .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* ========== Stat Cards Animation ========== */
+.stats-grid .stat-card {
+  animation: cardSlideUp 0.5s ease backwards;
+  transition: all 0.3s ease;
+}
+
+.stats-grid .stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-grid .stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stats-grid .stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stats-grid .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.stats-grid .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes cardSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== Table Row Animation ========== */
+.table-wrap tbody tr {
+  animation: rowFadeIn 0.4s ease backwards;
+  transition: background 0.2s ease;
+}
+
+.table-wrap tbody tr:hover {
+  background: var(--primary-light);
+}
+
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.table-wrap tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.table-wrap tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.table-wrap tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.table-wrap tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.table-wrap tbody tr:nth-child(5) { animation-delay: 0.25s; }
+.table-wrap tbody tr:nth-child(6) { animation-delay: 0.3s; }
+
+/* ========== Card Hover Effect ========== */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ========== Badge Pulse Animation ========== */
+.badge-completed {
+  animation: badgePop 0.3s ease;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* ========== Service Card Hover ========== */
+.service-card {
+  transition: all 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.service-card:hover .arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+.service-card .arrow {
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+/* ========== Page Intro Animation ========== */
+.page-intro {
+  animation: slideUp 0.4s ease;
+}
+
+.page-intro h1 {
+  animation: slideUp 0.5s ease 0.1s backwards;
+}
+
+.page-intro p {
+  animation: slideUp 0.5s ease 0.2s backwards;
+}
+
+/* ========== Button Click Effect ========== */
+.btn {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* ========== Toast Animation ========== */
+.toast {
+  animation: toastSlide 0.4s ease;
+}
+
+@keyframes toastSlide {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ========== Drawer Animation ========== */
+.drawer {
+  animation: drawerSlide 0.3s ease;
+}
+
+@keyframes drawerSlide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ========== Application detail fields ========== */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.detail-field span {
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.detail-field.full { grid-column: 1 / -1; }
+
+.status-timeline {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+.status-timeline h4 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  position: relative;
+}
+
+.timeline-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.timeline-dot.active { background: var(--primary); }
+.timeline-dot.done { background: var(--success); }
+
+.timeline-item p { font-size: 12.5px; color: var(--text); }
+.timeline-item small { font-size: 11px; color: var(--text-muted); }
+
+/* Support ticket form success state */
+.ticket-success {
+  text-align: center;
+  padding: 24px;
+}
+.ticket-success .success-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--success-bg);
+  color: var(--success);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  margin: 0 auto 12px;
+  animation: badgePop 0.5s ease;
+}
+
+@media (max-width: 1024px) {
+  .hero { flex-direction: column; text-align: center; padding: 28px 20px; }
+  .detail-grid { grid-template-columns: 1fr; }
+}
