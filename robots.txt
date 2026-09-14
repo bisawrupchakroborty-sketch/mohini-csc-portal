@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /config/
+Disallow: /utils/
+
+Sitemap: https://mohini-csc-portal.vercel.app/sitemap.xml

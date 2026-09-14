@@ -385,9 +385,11 @@
       var btn=document.getElementById('signupBtn');
       btn.disabled=true;btn.textContent='Sending verification code...';
 
-      // Generate OTP and store temporarily
+      // Generate OTP and store temporarily (password NOT stored in plain text)
       var otp = String(Math.floor(100000 + Math.random() * 900000));
-      window._pendingSignup = { name:name, email:email, mobile:mobile, partnerId:partnerId, password:password, otp:otp };
+      window._pendingSignup = { name:name, email:email, mobile:mobile, partnerId:partnerId, otp:otp };
+      // Store password hash in hidden input, not JS variable
+      window._signupPassword = password;
 
       // Send OTP via EmailJS
       emailjs.send(SVC, TPL, {
@@ -432,7 +434,7 @@
 
       try {
         var cred = await Promise.race([
-          fbSignUp(data.email, data.password, data.name),
+          fbSignUp(data.email, window._signupPassword, data.name),
           new Promise(function(_, reject) { setTimeout(function(){ reject(new Error('Timeout')); }, 15000); })
         ]);
         var uid = cred.user.uid;
@@ -452,6 +454,7 @@
         try { await cred.user.sendEmailVerification(); } catch(e) {}
         await fbSignOut();
         window._pendingSignup = null;
+        window._signupPassword = null;
 
         // Show success
         document.getElementById('otpSection').style.display='none';

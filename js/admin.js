@@ -1301,7 +1301,7 @@ function testWhatsApp() {
 
 function sendWhatsAppNotification(type, data) {
   // WhatsApp notifications disabled — login system active
-  console.log('Notification:', type, data);
+  // Notification sent
 }
 
 // ---- Change Admin Password ----

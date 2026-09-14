@@ -51,33 +51,40 @@ function deleteAccount() {
   if (!confirm('Are you sure you want to delete your account?\n\nThis will:\n- Delete your login data\n- Delete all your applications\n- Cannot be undone\n\nType OK to confirm.')) return;
   if (!confirm('FINAL WARNING: Your account and ALL data will be permanently deleted. Continue?')) return;
 
+  var password = prompt('Enter your password to confirm deletion:');
+  if (!password) { toast('Deletion cancelled.'); return; }
+
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
   var user = fbGetUser();
+  var email = loginData.contact;
 
   if (!uid || !user) {
     toast('Not logged in. Please login first.');
     return;
   }
 
-  toast('Deleting account...');
+  toast('Re-authenticating...');
 
-  // Delete Firestore data (non-blocking)
-  fsDeleteDoc('partnerApps', uid).catch(function(){});
-  fsDeleteDoc('partnerWallets', uid).catch(function(){});
-  fsDeleteDoc('partners', uid).catch(function(){});
-
-  // Delete Firebase Auth user
-  user.delete().then(function() {
+  // Re-authenticate with password before deleting
+  var credential = firebase.auth.EmailAuthProvider.credential(email, password);
+  user.reauthenticateWithCredential(credential).then(function() {
+    toast('Deleting account...');
+    fsDeleteDoc('partnerApps', uid).catch(function(){});
+    fsDeleteDoc('partnerWallets', uid).catch(function(){});
+    fsDeleteDoc('partners', uid).catch(function(){});
+    return user.delete();
+  }).then(function() {
     localStorage.removeItem('mohini_partner_login');
     toast('Account deleted.');
     setTimeout(function() { window.location.href = 'login.html'; }, 1000);
   }).catch(function(e) {
-    console.error('Delete failed:', e);
-    if (e.code === 'auth/requires-recent-login') {
-      toast('Please re-login first, then delete account.');
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      toast('Wrong password. Deletion cancelled.');
+    } else if (e.code === 'auth/requires-recent-login') {
+      toast('Session expired. Please login again and then delete.');
     } else {
-      toast('Delete failed: ' + (e.message || e));
+      toast('Delete failed. Try again.');
     }
   });
 }
