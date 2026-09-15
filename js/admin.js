@@ -17,10 +17,17 @@ let adminServices = [
 
 async function saveAdminServices() {
   var promises = adminServices.map(function(s) {
+    var pp = s.partnerPrice || 0;
+    if (!pp || pp <= 0) pp = Math.round((s.price || 0) * 0.8);
+    // Also fix requestTypes partnerPrice if missing
+    var rts = (s.requestTypes || []).map(function(r) {
+      if (typeof r === 'string') return { name: r, price: s.price, partnerPrice: pp };
+      return { name: r.name, price: r.price || s.price, partnerPrice: r.partnerPrice || pp };
+    });
     return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), {
-      name: s.name, type: s.type, price: s.price, partnerPrice: s.partnerPrice,
+      name: s.name, type: s.type, price: s.price, partnerPrice: pp,
       desc: s.desc, enabled: s.enabled, maintenance: s.maintenance || false,
-      paymentEnabled: s.paymentEnabled !== false, requestTypes: s.requestTypes || [],
+      paymentEnabled: s.paymentEnabled !== false, requestTypes: rts,
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
       aadhaarRequired: s.aadhaarRequired || false
     }).catch(function(e) {
