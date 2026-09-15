@@ -942,7 +942,7 @@ async function addNewService() {
 }
 
 // ---- Payments ----
-async function renderPayments(data) {
+async function renderPayments(data, search, statusFilter) {
   var allPayments = [];
 
   // Load wallet transactions from Firestore
@@ -1005,7 +1005,19 @@ async function renderPayments(data) {
     });
   } catch(e) {}
 
-  const list = data || allPayments;
+  var filtered = allPayments;
+  if (search) {
+    filtered = filtered.filter(function(p) {
+      return (p.id || '').toLowerCase().includes(search) ||
+             (p.app || '').toLowerCase().includes(search) ||
+             (p.partner || '').toLowerCase().includes(search) ||
+             (p.gateway || '').toLowerCase().includes(search);
+    });
+  }
+  if (statusFilter) {
+    filtered = filtered.filter(function(p) { return p.status === statusFilter; });
+  }
+  const list = data || filtered;
   const el = document.getElementById('paymentRows');
   if (!el) return;
   if (list.length === 0) {
@@ -1026,8 +1038,10 @@ async function renderPayments(data) {
   `).join('');
 }
 
-function filterPayments(search, status) {
-  renderPayments();
+function filterPayments() {
+  var search = (document.getElementById('paymentSearch')?.value || '').toLowerCase();
+  var statusF = document.getElementById('paymentFilterStatus')?.value || '';
+  renderPayments(null, search, statusF);
 }
 
 // ---- Documents ----

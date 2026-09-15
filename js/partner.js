@@ -192,7 +192,7 @@ function renderServiceCards() {
     if (s.hasPartnerId && s.originalPrice > 0 && s.partnerPrice > 0 && s.originalPrice > s.partnerPrice) {
       priceHtml = '<span style="text-decoration:line-through;color:var(--text-muted);font-size:11px">₹' + s.originalPrice + '</span> <span style="font-weight:700;color:var(--success)">₹' + s.partnerPrice + '</span> <span style="background:rgba(34,197,94,.12);color:var(--success);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">PARTNER</span>';
     }
-    return '<button class="service-card" onclick="openService(\'' + name.replace(/'/g, "\\'") + '\')"><div class="service-icon ' + s.iconClass + '">' + s.icon + '</div><div><b>' + escName + '</b>' + escType + '<small>' + desc + '</small><div class="price">' + priceHtml + '</div></div><span class="arrow">→</span></button>';
+    return '<button class="service-card" data-service="' + escHtml(name) + '"><div class="service-icon ' + s.iconClass + '">' + s.icon + '</div><div><b>' + escName + '</b>' + escType + '<small>' + desc + '</small><div class="price">' + priceHtml + '</div></div><span class="arrow">→</span></button>';
   }).join('');
 
   var dashGrid = document.getElementById('dashServiceGrid');
@@ -1187,11 +1187,12 @@ function submitTicket() {
   var myPartnerId = loginData.partnerId || '';
   var now = formatDate(new Date());
 
-  // Get current ticket count from Firestore for unique ID
-  fsGetDoc('settings', 'ticketCounter').then(function(doc) {
-    var counter = (doc && doc.counter) ? doc.counter + 1 : 1;
-    fsSetDoc('settings', 'ticketCounter', { counter: counter }).catch(function(){});
-
+  // Atomically increment ticket counter to prevent duplicate IDs
+  var counterRef = db.collection('settings').doc('ticketCounter');
+  counterRef.set({ counter: firebase.firestore.FieldValue.increment(1) }, { merge: true }).then(function() {
+    return counterRef.get();
+  }).then(function(doc) {
+    var counter = (doc && doc.data() && doc.data().counter) ? doc.data().counter : 1;
     var newId = 'TKT-' + String(counter).padStart(3, '0');
     var ticket = {
       id: newId,
@@ -1292,9 +1293,15 @@ function showMaintenancePage() {
 
 // Event delegation for View Application buttons (XSS-safe)
 document.addEventListener('click', function(e) {
-  const btn = e.target.closest('[data-view-app]');
-  if (btn) {
-    viewApp(btn.getAttribute('data-view-app'));
+  const viewBtn = e.target.closest('[data-view-app]');
+  if (viewBtn) {
+    viewApp(viewBtn.getAttribute('data-view-app'));
+    return;
+  }
+  const svcBtn = e.target.closest('[data-service]');
+  if (svcBtn) {
+    openService(svcBtn.getAttribute('data-service'));
+    return;
   }
 });
 
