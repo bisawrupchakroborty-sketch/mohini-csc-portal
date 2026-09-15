@@ -577,7 +577,7 @@
             partnerId: partnerId, name: name, phone: phone,
             paymentId: response.razorpay_payment_id, price: price,
             issueDate: issueDate.toISOString(), validTill: validTill.toISOString(),
-            usedBy: null, createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString()
           }).catch(function(e){ console.warn('Firestore save skipped:', e); });
 
           fsSetDoc('payments', response.razorpay_payment_id, {

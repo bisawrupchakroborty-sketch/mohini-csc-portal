@@ -113,7 +113,7 @@ function loadServicesFromAdmin() {
   var p1 = myPartnerId ? fsQuery('partnerIds', 'partnerId', '==', myPartnerId) : Promise.resolve([]);
   var p2 = myUid ? fsQuery('partnerIds', 'usedBy', '==', myUid) : Promise.resolve([]);
 
-  Promise.all([svcPromise, p1, p2]).then(function(results) {
+  return Promise.all([svcPromise, p1, p2]).then(function(results) {
     var adminSvc = results[0];
     var boughtIds = results[1];
     var boughtByUid = results[2];
