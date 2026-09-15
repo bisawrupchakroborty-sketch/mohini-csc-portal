@@ -106,38 +106,11 @@ setTimeout(function() { renderServiceCards(); }, 0);
 function loadServicesFromAdmin() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var myPartnerId = loginData.partnerId || '';
-  var myUid = loginData.uid || '';
 
-  // Run all queries in parallel instead of sequentially
-  var svcPromise = fsGetCollection('services');
-  var p1 = myPartnerId ? fsQuery('partnerIds', 'partnerId', '==', myPartnerId) : Promise.resolve([]);
-  var p2 = myUid ? fsQuery('partnerIds', 'usedBy', '==', myUid) : Promise.resolve([]);
+  // Partner status is already determined at login — don't re-query partnerIds
+  var hasPartnerId = !!myPartnerId;
 
-  return Promise.all([svcPromise, p1, p2]).then(function(results) {
-    var adminSvc = results[0];
-    var boughtIds = results[1];
-    var boughtByUid = results[2];
-
-    var hasPartnerId = false;
-
-    // Method 1: partnerIds by partnerId
-    if (boughtIds.length > 0 && boughtIds[0].usedBy) {
-      hasPartnerId = true;
-    }
-
-    // Method 2: partnerIds by partnerId (timing issue - assigned but usedBy not set yet)
-    if (!hasPartnerId && boughtIds.length > 0 && myPartnerId) {
-      hasPartnerId = true;
-    }
-
-    // Method 3: partnerIds by usedBy UID
-    if (!hasPartnerId && boughtByUid.length > 0 && boughtByUid[0].partnerId) {
-      hasPartnerId = true;
-      // Save detected partnerId for future use
-      loginData.partnerId = boughtByUid[0].partnerId;
-      localStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
-      if (myUid) fsSetDoc('partners', myUid, { partnerId: boughtByUid[0].partnerId }).catch(function(){});
-    }
+  return fsGetCollection('services').then(function(adminSvc) {
 
     // Only clear and rebuild if admin has configured services
     if (adminSvc && adminSvc.length > 0) {
