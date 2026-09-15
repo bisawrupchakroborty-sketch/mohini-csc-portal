@@ -147,7 +147,9 @@ function loadServicesFromAdmin() {
     // Rebuild services from Firestore
     services = {};
     (adminSvc || []).forEach(function(s) {
-      if (s.enabled === true && !s.maintenance) {
+      var isEnabled = s.enabled === true || s.enabled === 'true' || s.enabled === 1;
+      var isMaintenance = s.maintenance === true || s.maintenance === 'true';
+      if (isEnabled && !isMaintenance) {
         var iconChar = s.name.charAt(0);
         var iconCls = 'other';
         if (s.name.includes('Aadhaar')) { iconChar = 'A'; iconCls = 'aadhaar'; }

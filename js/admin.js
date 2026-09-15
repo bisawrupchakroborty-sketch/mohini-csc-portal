@@ -31,7 +31,6 @@ async function saveAdminServices() {
 }
 
 async function loadAdminServices() {
-  // Build lookup of hardcoded defaults for partnerPrice/requestTypes fallback
   var defaultsByName = {};
   adminServices.forEach(function(d) { defaultsByName[d.name] = d; });
 
@@ -41,24 +40,31 @@ async function loadAdminServices() {
       adminServices = saved.map(function(s) {
         var result = Object.assign({}, s);
         delete result._id;
-        // If partnerPrice missing, fill from hardcoded defaults
-        if (!result.partnerPrice || result.partnerPrice <= 0) {
-          var def = defaultsByName[result.name];
-          if (def) result.partnerPrice = def.partnerPrice;
-        }
-        // If requestTypes missing or empty, fill from defaults
-        if (!result.requestTypes || result.requestTypes.length === 0) {
-          var def2 = defaultsByName[result.name];
-          if (def2 && def2.requestTypes) result.requestTypes = def2.requestTypes.slice();
-        }
-        // If docs missing, fill from defaults
-        if (!result.docs || result.docs.length === 0) {
-          var def3 = defaultsByName[result.name];
-          if (def3 && def3.docs) result.docs = def3.docs.slice();
+        var def = defaultsByName[result.name];
+        if (def) {
+          // Always ensure partnerPrice is correct
+          if (!result.partnerPrice || result.partnerPrice <= 0) result.partnerPrice = def.partnerPrice;
+          // Always ensure requestTypes are complete (use defaults as source of truth)
+          if (!result.requestTypes || result.requestTypes.length === 0) {
+            result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
+          }
+          // Ensure each requestType has partnerPrice
+          result.requestTypes = result.requestTypes.map(function(r) {
+            if (typeof r === 'string') return { name: r, price: def.price, partnerPrice: def.partnerPrice };
+            if (!r.partnerPrice || r.partnerPrice <= 0) {
+              var match = def.requestTypes.find(function(dr) { return dr.name === r.name; });
+              r.partnerPrice = match ? match.partnerPrice : def.partnerPrice;
+            }
+            return r;
+          });
+          // Ensure docs are complete
+          if (!result.docs || result.docs.length === 0) result.docs = def.docs.slice();
+          // Ensure enabled is boolean
+          if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
+          if (result.enabled === undefined) result.enabled = def.enabled;
         }
         return result;
       });
-      // Re-save services that had missing fields
       await saveAdminServices();
     }
   } catch(e) {
