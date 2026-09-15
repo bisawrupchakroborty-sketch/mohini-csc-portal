@@ -226,13 +226,16 @@ let walletTxns = [];
 let txnCounter = 7782;
 
 // ---- Persistence: Save/Load Applications via Firestore ----
-function saveApplications() {
+async function saveApplications() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
-  if (!uid) return;
-  fsSetDoc('partnerApps', uid, { apps: applications }).catch(function(e) {
+  if (!uid) { console.warn('No UID, cannot save apps'); return; }
+  try {
+    await fsSetDoc('partnerApps', uid, { apps: applications });
+  } catch(e) {
     console.error('Failed to save apps:', e);
-  });
+    toast('Warning: Your application may not have been saved to server. Check your connection.');
+  }
 }
 
 async function loadApplications() {
@@ -652,9 +655,13 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
         reader.readAsDataURL(fr.file);
       });
     });
-    Promise.all(promises).then(function() { saveApplications(); });
+    Promise.all(promises).then(function() { return saveApplications(); }).then(function() {
+      toast('Application submitted! Application ID: ' + appId);
+    });
   } else {
-    saveApplications();
+    saveApplications().then(function() {
+      toast('Application submitted! Application ID: ' + appId);
+    });
   }
 
   // Deduct from wallet if wallet payment selected
@@ -691,7 +698,6 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
 
   notifCount++;
   updateNotifBadge();
-  toast('Application ' + newApp.id + ' submitted successfully!');
 }
 
 // ---- Render Recent ----
