@@ -156,10 +156,6 @@ function loadServicesFromAdmin() {
         else if (s.name.includes('Bill')) { iconChar = '₹'; iconCls = 'bill'; }
         var partnerPrice = s.partnerPrice || 0;
         var normalPrice = s.price || 0;
-        // If partnerPrice missing but partner has ID, default to 80% of normal price
-        if (hasPartnerId && (!partnerPrice || partnerPrice <= 0) && normalPrice > 0) {
-          partnerPrice = Math.round(normalPrice * 0.8);
-        }
         var showPrice = s.paymentEnabled !== false ? (hasPartnerId && partnerPrice > 0 ? partnerPrice : normalPrice) : 0;
         services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}], instructions: s.instructions || '' };
       }

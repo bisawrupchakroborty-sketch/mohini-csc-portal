@@ -17,17 +17,10 @@ let adminServices = [
 
 async function saveAdminServices() {
   var promises = adminServices.map(function(s) {
-    var pp = s.partnerPrice || 0;
-    if (!pp || pp <= 0) pp = Math.round((s.price || 0) * 0.8);
-    // Also fix requestTypes partnerPrice if missing
-    var rts = (s.requestTypes || []).map(function(r) {
-      if (typeof r === 'string') return { name: r, price: s.price, partnerPrice: pp };
-      return { name: r.name, price: r.price || s.price, partnerPrice: r.partnerPrice || pp };
-    });
     return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), {
-      name: s.name, type: s.type, price: s.price, partnerPrice: pp,
+      name: s.name, type: s.type, price: s.price, partnerPrice: s.partnerPrice || 0,
       desc: s.desc, enabled: s.enabled, maintenance: s.maintenance || false,
-      paymentEnabled: s.paymentEnabled !== false, requestTypes: rts,
+      paymentEnabled: s.paymentEnabled !== false, requestTypes: s.requestTypes || [],
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
       aadhaarRequired: s.aadhaarRequired || false
     }).catch(function(e) {
@@ -38,14 +31,35 @@ async function saveAdminServices() {
 }
 
 async function loadAdminServices() {
+  // Build lookup of hardcoded defaults for partnerPrice/requestTypes fallback
+  var defaultsByName = {};
+  adminServices.forEach(function(d) { defaultsByName[d.name] = d; });
+
   try {
     var saved = await fsGetCollection('services');
     if (saved && saved.length > 0) {
       adminServices = saved.map(function(s) {
         var result = Object.assign({}, s);
         delete result._id;
+        // If partnerPrice missing, fill from hardcoded defaults
+        if (!result.partnerPrice || result.partnerPrice <= 0) {
+          var def = defaultsByName[result.name];
+          if (def) result.partnerPrice = def.partnerPrice;
+        }
+        // If requestTypes missing or empty, fill from defaults
+        if (!result.requestTypes || result.requestTypes.length === 0) {
+          var def2 = defaultsByName[result.name];
+          if (def2 && def2.requestTypes) result.requestTypes = def2.requestTypes.slice();
+        }
+        // If docs missing, fill from defaults
+        if (!result.docs || result.docs.length === 0) {
+          var def3 = defaultsByName[result.name];
+          if (def3 && def3.docs) result.docs = def3.docs.slice();
+        }
         return result;
       });
+      // Re-save services that had missing fields
+      await saveAdminServices();
     }
   } catch(e) {
     console.error('Failed to load services from Firestore:', e);
