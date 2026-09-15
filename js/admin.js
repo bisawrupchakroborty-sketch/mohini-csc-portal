@@ -17,13 +17,15 @@ let adminServices = [
 
 async function saveAdminServices() {
   var promises = adminServices.map(function(s) {
-    return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), {
+    var docId = s.name.replace(/[\/\.\#\[\]\$]/g, '_');
+    var data = {
       name: s.name, type: s.type, price: s.price, partnerPrice: s.partnerPrice || 0,
       desc: s.desc, enabled: s.enabled, maintenance: s.maintenance || false,
       paymentEnabled: s.paymentEnabled !== false, requestTypes: s.requestTypes || [],
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
       aadhaarRequired: s.aadhaarRequired || false
-    }).catch(function(e) {
+    };
+    return fsSetDoc('services', docId, data).catch(function(e) {
       console.error('Failed to save service:', s.name, e);
     });
   });
@@ -39,10 +41,8 @@ async function loadAdminServices() {
     if (saved && saved.length > 0) {
       adminServices = saved.map(function(s) {
         var result = Object.assign({}, s);
-        delete result._id;
         var def = defaultsByName[result.name];
         if (def) {
-          // Use defaults only if Firestore data is empty/missing
           if (!result.partnerPrice || result.partnerPrice <= 0) result.partnerPrice = def.partnerPrice;
           if (!result.requestTypes || result.requestTypes.length === 0) {
             result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
@@ -50,13 +50,11 @@ async function loadAdminServices() {
           if (!result.docs || result.docs.length === 0) {
             result.docs = def.docs.slice();
           }
-          // Ensure enabled is boolean
           if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
           if (result.enabled === undefined) result.enabled = def.enabled;
         }
         return result;
       });
-      await saveAdminServices();
     }
   } catch(e) {
     console.error('Failed to load services from Firestore:', e);
@@ -712,7 +710,7 @@ function editService(idx) {
   document.getElementById('editServiceModal').classList.add('open');
 }
 
-function saveServiceEdit() {
+async function saveServiceEdit() {
   const s = adminServices[editingServiceIdx];
   s.type = document.getElementById('editSvcType').value || s.type;
   s.price = parseInt(document.getElementById('editSvcPrice').value) || s.price;
@@ -730,7 +728,9 @@ function saveServiceEdit() {
   if (allDocs.length === 0) allDocs = ['Photo', 'ID Proof'];
   s.docs = allDocs;
   s.aadhaarRequired = checkedDocs.indexOf('Aadhaar Card') !== -1;
-  saveAdminServices();
+
+  toast('Saving...');
+  await saveAdminServices();
 
   closeModal('editServiceModal');
   renderServices();
@@ -878,7 +878,7 @@ function gatherEditCheckedDocs() {
   return docs;
 }
 
-function addNewService() {
+async function addNewService() {
   const name = document.getElementById('newSvcName').value.trim();
   const type = document.getElementById('newSvcType').value;
   const price = parseInt(document.getElementById('newSvcPrice').value);
@@ -928,7 +928,8 @@ function addNewService() {
   };
 
   adminServices.push(newService);
-  saveAdminServices();
+  toast('Saving...');
+  await saveAdminServices();
   closeModal('addServiceModal');
   renderServices();
   toast(name + ' added successfully!');
