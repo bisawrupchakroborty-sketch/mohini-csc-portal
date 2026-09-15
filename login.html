@@ -210,12 +210,28 @@
 
         // Get profile from Firestore (non-blocking, with fallback)
         var profile = null;
-        try { profile = await Promise.race([fsGetDoc('partners', uid), new Promise(function(_,r){setTimeout(r,3000)})]); } catch(e){}
+        try { profile = await Promise.race([fsGetDoc('partners', uid), new Promise(function(_,r){setTimeout(r,5000)})]); } catch(e){}
+
+        // Determine partnerId - check profile first, then fallback to partnerIds collection
+        var partnerId = (profile && profile.partnerId) ? profile.partnerId : '';
+        if (!partnerId) {
+          try {
+            var boughtIds = await Promise.race([
+              fsQuery('partnerIds', 'usedBy', '==', uid),
+              new Promise(function(_,r){setTimeout(r,5000)})
+            ]);
+            if (boughtIds && boughtIds.length > 0 && boughtIds[0].partnerId) {
+              partnerId = boughtIds[0].partnerId;
+              // Save to profile for future logins
+              fsSetDoc('partners', uid, { partnerId: partnerId }).catch(function(){});
+            }
+          } catch(e){}
+        }
 
         var loginData = {
           method: 'firebase',
           contact: email,
-          partnerId: (profile && profile.partnerId) ? profile.partnerId : 'MCS-000',
+          partnerId: partnerId,
           name: (profile && profile.name) ? profile.name : cred.user.displayName || email,
           mobile: (profile && profile.mobile) ? profile.mobile : '',
           loggedIn: true,

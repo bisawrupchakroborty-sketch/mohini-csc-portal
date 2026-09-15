@@ -27,10 +27,10 @@ function checkLogin() {
       return false;
     }
     // Update UI with login info
-    const partnerId = login.partnerId || 'MCS-001';
+    const partnerId = login.partnerId || '';
     const userName = login.name || 'Partner';
-    document.querySelectorAll('.sidebar-user small').forEach(el => el.textContent = 'ID: ' + partnerId);
-    document.querySelectorAll('.profile-pill small').forEach(el => el.textContent = 'Partner ID: ' + partnerId);
+    document.querySelectorAll('.sidebar-user small').forEach(el => el.textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID');
+    document.querySelectorAll('.profile-pill small').forEach(el => el.textContent = partnerId ? 'Partner ID: ' + partnerId : 'No Partner ID');
     document.querySelectorAll('.avatar-sm').forEach(el => {
       if (el.textContent === 'MC') el.textContent = userName.charAt(0).toUpperCase();
     });
