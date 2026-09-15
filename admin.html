@@ -1001,6 +1001,16 @@ Time: {time}
         var content = document.getElementById('adminContent');
         if (gate) gate.style.display = 'none';
         if (content) { content.style.display = ''; content.removeAttribute('id'); }
+
+        // Sign into Firebase Auth so Firestore writes work
+        try {
+          if (!fbAuth.currentUser) {
+            fbAuth.signInAnonymously().catch(function(e) {
+              console.warn('Firebase anonymous auth failed:', e);
+            });
+          }
+        } catch(e) {}
+
         setTimeout(function() { if (typeof initAdmin === 'function') initAdmin(); }, 100);
       } else if (!stored) {
         // First time - set default hashed password
@@ -1022,6 +1032,16 @@ Time: {time}
         var content = document.getElementById('adminContent');
         if (gate) gate.style.display = 'none';
         if (content) { content.style.display = ''; content.removeAttribute('id'); }
+
+        // Sign into Firebase Auth so Firestore writes work
+        try {
+          if (!fbAuth.currentUser) {
+            await fbAuth.signInAnonymously();
+          }
+        } catch(e) {
+          console.warn('Firebase anonymous auth failed:', e);
+        }
+
         setTimeout(function() {
           if (typeof initAdmin === 'function') initAdmin();
           if (typeof toast === 'function') toast('Welcome to Admin Panel');
