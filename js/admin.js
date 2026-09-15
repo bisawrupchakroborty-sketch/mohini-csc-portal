@@ -16,6 +16,7 @@ let adminServices = [
 ];
 
 async function saveAdminServices() {
+  console.log('[SAVE-SVC] Saving', adminServices.length, 'services...');
   var promises = adminServices.map(function(s) {
     var docId = s.name.replace(/[\/\.\#\[\]\$]/g, '_');
     var data = {
@@ -25,11 +26,15 @@ async function saveAdminServices() {
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
       aadhaarRequired: s.aadhaarRequired || false
     };
-    return fsSetDoc('services', docId, data).catch(function(e) {
-      console.error('Failed to save service:', s.name, e);
+    console.log('[SAVE-SVC] Saving:', s.name, 'docId:', docId, 'reqTypes:', (s.requestTypes||[]).length);
+    return fsSetDoc('services', docId, data).then(function() {
+      console.log('[SAVE-SVC] OK:', s.name);
+    }).catch(function(e) {
+      console.error('[SAVE-SVC] FAILED:', s.name, e);
     });
   });
   await Promise.all(promises);
+  console.log('[SAVE-SVC] All done');
 }
 
 async function loadAdminServices() {
@@ -38,10 +43,12 @@ async function loadAdminServices() {
 
   try {
     var saved = await fsGetCollection('services');
+    console.log('[LOAD-SVC] Firestore returned', saved.length, 'services');
     if (saved && saved.length > 0) {
       adminServices = saved.map(function(s) {
         var result = Object.assign({}, s);
         var def = defaultsByName[result.name];
+        var hadReqTypes = result.requestTypes && result.requestTypes.length > 0;
         if (def) {
           if (!result.partnerPrice || result.partnerPrice <= 0) result.partnerPrice = def.partnerPrice;
           if (!result.requestTypes || result.requestTypes.length === 0) {
@@ -53,11 +60,12 @@ async function loadAdminServices() {
           if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
           if (result.enabled === undefined) result.enabled = def.enabled;
         }
+        console.log('[LOAD-SVC]', result.name, 'reqTypes:', (result.requestTypes||[]).length, 'fromFirestore:', hadReqTypes);
         return result;
       });
     }
   } catch(e) {
-    console.error('Failed to load services from Firestore:', e);
+    console.error('[LOAD-SVC] Failed:', e);
   }
   renderServices();
 }
