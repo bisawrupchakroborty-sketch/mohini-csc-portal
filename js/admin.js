@@ -42,12 +42,14 @@ async function loadAdminServices() {
         delete result._id;
         var def = defaultsByName[result.name];
         if (def) {
-          // Always use defaults for partnerPrice
+          // Use defaults only if Firestore data is empty/missing
           if (!result.partnerPrice || result.partnerPrice <= 0) result.partnerPrice = def.partnerPrice;
-          // Always use defaults requestTypes (admin panel is source of truth)
-          result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
-          // Always use defaults docs
-          result.docs = def.docs.slice();
+          if (!result.requestTypes || result.requestTypes.length === 0) {
+            result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
+          }
+          if (!result.docs || result.docs.length === 0) {
+            result.docs = def.docs.slice();
+          }
           // Ensure enabled is boolean
           if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
           if (result.enabled === undefined) result.enabled = def.enabled;
