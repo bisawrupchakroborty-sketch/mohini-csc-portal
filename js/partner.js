@@ -100,6 +100,9 @@ var services = {
   'Other CSC Service': { price:100, icon:'+', iconClass:'other', docs:['Supporting Document 1','Supporting Document 2'] },
 };
 
+// Show hardcoded services INSTANTLY — no waiting for Firestore
+setTimeout(function() { renderServiceCards(); }, 0);
+
 function loadServicesFromAdmin() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var myPartnerId = loginData.partnerId || '';
@@ -136,7 +139,10 @@ function loadServicesFromAdmin() {
       if (myUid) fsSetDoc('partners', myUid, { partnerId: boughtByUid[0].partnerId }).catch(function(){});
     }
 
-    services = {};
+    // Only clear and rebuild if admin has configured services
+    if (adminSvc && adminSvc.length > 0) {
+      services = {};
+    }
     (adminSvc || []).forEach(function(s) {
       if (s.enabled && !s.maintenance) {
         var iconChar = s.name.charAt(0);
