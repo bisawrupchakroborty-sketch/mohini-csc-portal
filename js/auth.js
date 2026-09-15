@@ -51,34 +51,40 @@ async function fsSetDoc(collection, docId, data) {
 }
 
 async function fsGetDoc(collection, docId) {
-  var snap = await Promise.race([
-    db.collection(collection).doc(docId).get(),
-    _fsTimeout(8000)
-  ]);
-  return snap.exists ? snap.data() : null;
+  try {
+    var snap = await Promise.race([
+      db.collection(collection).doc(docId).get(),
+      _fsTimeout(10000)
+    ]);
+    return snap && snap.exists ? snap.data() : null;
+  } catch(e) { return null; }
 }
 
 async function fsGetCollection(collection) {
-  var snap = await Promise.race([
-    db.collection(collection).get(),
-    _fsTimeout(8000)
-  ]);
-  return snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); });
+  try {
+    var snap = await Promise.race([
+      db.collection(collection).get(),
+      _fsTimeout(10000)
+    ]);
+    return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
+  } catch(e) { return []; }
 }
 
 async function fsDeleteDoc(collection, docId) {
   return await Promise.race([
     db.collection(collection).doc(docId).delete(),
-    _fsTimeout(8000)
+    _fsTimeout(10000)
   ]);
 }
 
 async function fsQuery(collection, field, op, value) {
-  var snap = await Promise.race([
-    db.collection(collection).where(field, op, value).get(),
-    _fsTimeout(8000)
-  ]);
-  return snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); });
+  try {
+    var snap = await Promise.race([
+      db.collection(collection).where(field, op, value).get(),
+      _fsTimeout(10000)
+    ]);
+    return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
+  } catch(e) { return []; }
 }
 
 // XSS-safe escape for HTML content

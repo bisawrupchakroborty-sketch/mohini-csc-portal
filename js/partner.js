@@ -92,16 +92,12 @@ function deleteAccount() {
 // ---- Demo Data ----
 let applications = [];
 
-var services = {
-  'Aadhaar Update': { price:120, icon:'A', iconClass:'aadhaar', docs:['Existing Aadhaar Copy','Proof of Identity / Address','Additional Supporting Document'] },
-  'PAN Services': { price:80, icon:'P', iconClass:'pan', docs:['Proof of Identity','Photograph','Aadhaar Copy'] },
-  'Ration Services': { price:70, icon:'R', iconClass:'ration', docs:['Ration Card Copy','Address Proof','Identity Proof'] },
-  'Bill Payment': { price:25, icon:'₹', iconClass:'bill', docs:['Previous Bill Copy','Account Number Proof'] },
-  'Other CSC Service': { price:100, icon:'+', iconClass:'other', docs:['Supporting Document 1','Supporting Document 2'] },
-};
+// Services will be loaded from Firestore via loadServicesFromAdmin()
+// Empty until Firestore loads — prevents showing stale hardcoded data
+var services = {};
 
-// Show hardcoded services INSTANTLY — no waiting for Firestore
-setTimeout(function() { renderServiceCards(); }, 0);
+// Services are loaded from Firestore via loadServicesFromAdmin()
+// No instant render — wait for Firestore data to avoid flash
 
 function loadServicesFromAdmin() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
@@ -111,11 +107,8 @@ function loadServicesFromAdmin() {
   var hasPartnerId = !!myPartnerId;
 
   return fsGetCollection('services').then(function(adminSvc) {
-
-    // Only clear and rebuild if admin has configured services
-    if (adminSvc && adminSvc.length > 0) {
-      services = {};
-    }
+    // Always rebuild from Firestore — clear hardcoded services
+    services = {};
     (adminSvc || []).forEach(function(s) {
       if (s.enabled && !s.maintenance) {
         var iconChar = s.name.charAt(0);
@@ -124,8 +117,8 @@ function loadServicesFromAdmin() {
         else if (s.name.includes('PAN')) { iconChar = 'P'; iconCls = 'pan'; }
         else if (s.name.includes('Ration')) { iconChar = 'R'; iconCls = 'ration'; }
         else if (s.name.includes('Bill')) { iconChar = '₹'; iconCls = 'bill'; }
-        var showPrice = s.paymentEnabled ? (hasPartnerId ? s.partnerPrice : s.price) : 0;
-        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: s.price, partnerPrice: s.partnerPrice, hasPartnerId: hasPartnerId, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false };
+        var showPrice = s.paymentEnabled !== false ? (hasPartnerId ? s.partnerPrice : s.price) : 0;
+        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: s.price, partnerPrice: s.partnerPrice, hasPartnerId: hasPartnerId, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: s.price, partnerPrice: s.partnerPrice}], instructions: s.instructions || '' };
       }
     });
     renderServiceCards();

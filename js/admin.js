@@ -15,13 +15,13 @@ let adminServices = [
   { name:'Other CSC Service', type:'Other', desc:'Configure additional services later', price:100, partnerPrice:80, enabled:false, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New Application',price:100,partnerPrice:80},{name:'Update',price:80,partnerPrice:60},{name:'Correction',price:80,partnerPrice:60},{name:'Other',price:100,partnerPrice:80}], docs:['Supporting Document 1','Supporting Document 2'], instructions:'Default template — configure per service.' },
 ];
 
-function saveAdminServices() {
-  // Save each service as a separate Firestore doc with name as ID
-  adminServices.forEach(function(s) {
-    fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), s).catch(function(e) {
-      console.error('Failed to save service:', e);
+async function saveAdminServices() {
+  var promises = adminServices.map(function(s) {
+    return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), s).catch(function(e) {
+      console.error('Failed to save service:', s.name, e);
     });
   });
+  await Promise.all(promises);
 }
 
 async function loadAdminServices() {
@@ -1200,13 +1200,39 @@ function switchSettingsTab(tab, el) {
 }
 
 async function saveSettings(section) {
-  if (section === 'General') {
-    var data = {
-      partnerIdPrice: parseInt(document.getElementById('settPartnerIdPrice').value) || 499,
-      partnerPrefix: document.getElementById('settPartnerPrefix').value || 'MCS-'
-    };
-    await fsSetDoc('settings', 'general', data);
+  try {
+    if (section === 'General') {
+      var data = {
+        partnerIdPrice: parseInt(document.getElementById('settPartnerIdPrice').value) || 499,
+        partnerPrefix: document.getElementById('settPartnerPrefix').value || 'MCS-'
+      };
+      await fsSetDoc('settings', 'general', data);
+    } else if (section === 'Branding') {
+      var data = {
+        siteName: document.getElementById('settSiteName') ? document.getElementById('settSiteName').value : '',
+        tagline: document.getElementById('settTagline') ? document.getElementById('settTagline').value : '',
+        logoUrl: document.getElementById('settLogo') ? document.getElementById('settLogo').value : ''
+      };
+      await fsSetDoc('settings', 'branding', data);
+    } else if (section === 'WhatsApp') {
+      var data = {
+        number: document.getElementById('settWhatsapp') ? document.getElementById('settWhatsapp').value : '',
+        message: document.getElementById('settWhatsappMsg') ? document.getElementById('settWhatsappMsg').value : ''
+      };
+      await fsSetDoc('settings', 'whatsapp', data);
+    } else if (section === 'Notifications') {
+      var data = {
+        emailEnabled: document.getElementById('settEmailNotif') ? document.getElementById('settEmailNotif').checked : true,
+        smsEnabled: document.getElementById('settSmsNotif') ? document.getElementById('settSmsNotif').checked : false
+      };
+      await fsSetDoc('settings', 'notifications', data);
+    } else {
+      await fsSetDoc('settings', section.toLowerCase(), { updated: new Date().toISOString() });
+    }
     toast(section + ' settings saved successfully!');
+  } catch(e) {
+    console.error('Failed to save settings:', e);
+    toast('Save failed. Check connection.');
   }
 }
 
