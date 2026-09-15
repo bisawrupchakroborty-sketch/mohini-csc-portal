@@ -1326,13 +1326,25 @@ fbOnAuthStateChanged(function(user) {
         renderApplications();
         renderDownloads();
         renderWalletTxns();
+        hideLoader();
       }).catch(function() {
         updateDashboardStats();
         renderRecent();
         renderApplications();
         renderDownloads();
         renderWalletTxns();
+        hideLoader();
       });
+    } else {
+      hideLoader();
     }
   });
 });
+
+function hideLoader() {
+  var loader = document.getElementById('pageLoader');
+  if (loader) {
+    loader.classList.add('hidden');
+    setTimeout(function() { loader.remove(); }, 600);
+  }
+}
