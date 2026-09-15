@@ -422,9 +422,6 @@ function adminReviewApp(id) {
     ${a.result ? `<div style="background:var(--success-bg);border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:12px;margin-top:12px"><b style="font-size:12px;color:var(--success);display:block">Result File: ${esc(a.result)}</b></div>` : ''}
     ${(() => { const p = partners.find(x => x.id === a.partner); return (p && (!p.whatsapp || p.whatsapp.length < 10)) ? '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:var(--radius-sm);padding:10px;margin-top:12px"><b style="font-size:12px;color:#92400e">⚠ Partner WhatsApp number missing — result documents may not be delivered.</b></div>' : ''; })()}
     <div style="margin-top:16px">
-      <div class="field full"><label>Application Note</label><span>${a.note ? esc(a.note) : '—'}</span></div>
-    </div>
-    <div style="margin-top:16px">
       <div class="form-group"><label>Internal Admin Notes</label><textarea id="adminNoteInput" rows="2" placeholder="Add internal processing notes…">${esc(a.adminNotes || '')}</textarea></div>
     </div>
   `;
@@ -573,10 +570,11 @@ function viewPartner(id) {
   document.getElementById('partnerModal').classList.add('open');
 }
 
-function togglePartner(id) {
+async function togglePartner(id) {
   const p = partners.find(x => x.id === id);
   if (!p) return;
   p.status = p.status === 'Active' ? 'Inactive' : 'Active';
+  await savePartners();
   renderPartners();
   toast('Partner ' + id + ' ' + (p.status === 'Active' ? 'activated' : 'deactivated') + '.');
 }

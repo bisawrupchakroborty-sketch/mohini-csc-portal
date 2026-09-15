@@ -70,10 +70,13 @@ function deleteAccount() {
   var credential = firebase.auth.EmailAuthProvider.credential(email, password);
   user.reauthenticateWithCredential(credential).then(function() {
     toast('Deleting account...');
-    fsDeleteDoc('partnerApps', uid).catch(function(){});
-    fsDeleteDoc('partnerWallets', uid).catch(function(){});
-    fsDeleteDoc('partners', uid).catch(function(){});
-    return user.delete();
+    return Promise.all([
+      fsDeleteDoc('partnerApps', uid),
+      fsDeleteDoc('partnerWallets', uid),
+      fsDeleteDoc('partners', uid)
+    ]).then(function() {
+      return user.delete();
+    });
   }).then(function() {
     localStorage.removeItem('mohini_partner_login');
     toast('Account deleted.');
@@ -497,6 +500,7 @@ function compressImage(base64DataUrl, maxDim, quality) {
 // ---- Upload ----
 function handleUpload(input, boxId) {
   const box = document.getElementById(boxId);
+  if (!box) return;
   const status = box.querySelector('.upload-status');
   if (input.files.length) {
     box.classList.add('has-file');
@@ -733,37 +737,31 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     await saveApplications();
   }
   doSave().then(function() {
+    // Deduct from wallet ONLY after save succeeds
+    if (selectedPayment === 'Wallet') {
+      walletBalance -= appAmount;
+      walletUsed += appAmount;
+      const txn = {
+        id: '#TXN-' + txnCounter++,
+        type: 'Wallet payment',
+        app: appId,
+        amount: -appAmount,
+        status: 'Success',
+        method: 'Wallet',
+        gateway: 'Wallet',
+        date: dateStr
+      };
+      walletTxns.unshift(txn);
+      saveWalletState();
+      const walletEl = document.getElementById('walletBalance');
+      if (walletEl) walletEl.textContent = '₹' + walletBalance.toLocaleString() + '.00';
+      renderWalletTxns();
+    }
     toast('Application ' + newApp.id + ' submitted and saved!');
   }).catch(function(e) {
     console.error('[SAVE] Final save failed:', e);
     toast('Error: Application saved locally but NOT synced to server. Refresh to retry.');
   });
-
-  // Deduct from wallet if wallet payment selected
-  if (selectedPayment === 'Wallet') {
-    walletBalance -= appAmount;
-    walletUsed += appAmount;
-
-    // Add wallet transaction only for wallet payments
-    const txn = {
-      id: '#TXN-' + txnCounter++,
-      type: 'Wallet payment',
-      app: appId,
-      amount: -appAmount,
-      status: 'Success',
-      method: 'Wallet',
-      gateway: 'Wallet',
-      date: dateStr
-    };
-    walletTxns.unshift(txn);
-  }
-
-  // Save wallet to localStorage
-  saveWalletState();
-  // Update wallet UI
-  const walletEl = document.getElementById('walletBalance');
-  if (walletEl) walletEl.textContent = '₹' + walletBalance.toLocaleString() + '.00';
-  renderWalletTxns();
 }
 
 // ---- Render Recent ----
@@ -785,7 +783,7 @@ function renderRecent() {
 
 // ---- Render Downloads ----
 function renderDownloads() {
-  const completed = applications.filter(a => a.status === 'Completed' && a.result);
+  const completed = applications.filter(a => a.status === 'Completed' && (a.result || a.resultFiles));
   const rows = document.getElementById('downloadsRows');
   if (!rows) return;
   if (completed.length === 0) {
@@ -860,6 +858,7 @@ function renderApplications() {
   `).join('');
 
   const pag = document.getElementById('appPagination');
+  if (!pag) return;
   if (pages <= 1) { pag.innerHTML = ''; return; }
   let ph = '';
   ph += `<button class="page-btn" onclick="appPageGo(${appPage-1})" ${appPage===1?'disabled':''}>&#8249;</button>`;
@@ -935,13 +934,14 @@ function viewApp(id) {
 // ---- Download Result as ZIP ----
 function downloadResult(appId) {
   var a = applications.find(function(x) { return x.id === appId; });
-  if (!a || !a.resultFiles || a.resultFiles.length === 0) {
+  var files = a ? (a.resultFiles || a.result) : null;
+  if (!a || !files || files.length === 0) {
     toast('No result files found.');
     return;
   }
 
-  if (a.resultFiles.length === 1) {
-    var f = a.resultFiles[0];
+  if (files.length === 1) {
+    var f = files[0];
     var link = document.createElement('a');
     link.href = f.data;
     link.download = f.name;
@@ -958,7 +958,7 @@ function downloadResult(appId) {
   }
 
   var zip = new JSZip();
-  a.resultFiles.forEach(function(f) {
+  files.forEach(function(f) {
     var base64 = f.data.split(',')[1];
     zip.file(f.name, base64, { base64: true });
   });
@@ -1025,29 +1025,34 @@ function submitReupload() {
   var svc = services[a.service];
   var docs = svc ? svc.docs : (a.docs || []).map(function(d) { return d.name || d; });
   var hasNew = false;
-  var fileReaders = [];
+  var readPromises = [];
 
   docs.forEach(function(docName, i) {
     if (reuploadFiles[i]) {
       hasNew = true;
       var file = reuploadFiles[i];
-      var reader = new FileReader();
       (function(idx, fileName, fileType, fileSize) {
-        reader.onload = function() {
-          var data = reader.result;
-          if (fileType.startsWith('image/') && data.length > 200000) {
-            compressImage(data, 800, 0.7).then(function(compressed) {
-              a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: compressed, status: 'Pending Review' };
-            }).catch(function() {
+        readPromises.push(new Promise(function(resolve) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var data = reader.result;
+            if (fileType.startsWith('image/') && data.length > 200000) {
+              compressImage(data, 800, 0.7).then(function(compressed) {
+                a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: compressed, status: 'Pending Review' };
+                resolve();
+              }).catch(function() {
+                a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: data, status: 'Pending Review' };
+                resolve();
+              });
+            } else {
               a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: data, status: 'Pending Review' };
-            });
-          } else {
-            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: data, status: 'Pending Review' };
-          }
-        };
+              resolve();
+            }
+          };
+          reader.onerror = function() { resolve(); };
+          reader.readAsDataURL(file);
+        }));
       })(i, file.name, file.type, file.size);
-      reader.readAsDataURL(file);
-      fileReaders.push(reader);
     }
   });
 
@@ -1057,7 +1062,7 @@ function submitReupload() {
     return;
   }
 
-  Promise.all(fileReaders.map(function(r) { return new Promise(function(resolve) { r.onload = function() { resolve(); }; r.onerror = function() { resolve(); }; }); })).then(function() {
+  Promise.all(readPromises).then(function() {
     a.status = 'Submitted';
     a.docStatus = 'Pending Review';
     a.updated = new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });
