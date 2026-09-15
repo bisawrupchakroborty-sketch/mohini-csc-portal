@@ -232,12 +232,13 @@ async function saveApplications() {
   console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
   if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
-    // Strip base64, keep Storage URLs
+    // Save base64 data — images already compressed in doSave()
+    // Limit to 3 docs per app to stay under Firestore 1MB document limit
     var cleanApps = applications.map(function(a) {
       var clean = Object.assign({}, a);
       if (clean.docs && clean.docs.length) {
-        clean.docs = clean.docs.slice(0, 5).map(function(d) {
-          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, status: d.status, url: d.url || '', storagePath: d.storagePath || '' };
+        clean.docs = clean.docs.slice(0, 3).map(function(d) {
+          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, status: d.status, data: d.data || '' };
         });
       }
       return clean;
@@ -471,6 +472,28 @@ function validDocs() {
   return true;
 }
 
+// ---- Image Compression for Firestore ----
+function compressImage(base64DataUrl, maxDim, quality) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
+    };
+    img.onerror = reject;
+    img.src = base64DataUrl;
+  });
+}
+
 // ---- Upload ----
 function handleUpload(input, boxId) {
   const box = document.getElementById(boxId);
@@ -632,7 +655,7 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     const label = box.querySelector('.upload-info b').textContent;
     if (inp.files.length) {
       const file = inp.files[0];
-      // Files uploaded to Firebase Storage (up to 10MB)
+      // Images auto-compressed, PDFs stored as-is (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast('File "' + file.name + '" too large (max 10MB). Skipping.');
         return;
@@ -680,22 +703,32 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
   notifCount++;
   updateNotifBadge();
 
-  // Upload files to Firebase Storage, then save URLs to Firestore
+  // Read files as base64 (images compressed to fit Firestore 1MB limit)
   async function doSave() {
-    var uid = loginData.uid;
     if (fileReaders.length > 0) {
-      toast('Uploading documents...');
-      var uploadPromises = fileReaders.map(function(fr) {
-        var path = 'partnerDocs/' + uid + '/' + appId + '/' + fr.file.name;
-        return storageUpload(path, fr.file).then(function(url) {
-          newApp.docs[fr.idx].url = url;
-          newApp.docs[fr.idx].storagePath = path;
-        }).catch(function(e) {
-          console.error('[UPLOAD] Failed:', fr.file.name, e);
-          newApp.docs[fr.idx].status = 'Upload Failed';
+      var promises = fileReaders.map(function(fr) {
+        return new Promise(function(resolve) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            // Compress images before saving
+            if (fr.file.type.startsWith('image/') && reader.result.length > 200000) {
+              compressImage(reader.result, 800, 0.7).then(function(compressed) {
+                newApp.docs[fr.idx].data = compressed;
+                resolve();
+              }).catch(function() {
+                newApp.docs[fr.idx].data = reader.result;
+                resolve();
+              });
+            } else {
+              newApp.docs[fr.idx].data = reader.result;
+              resolve();
+            }
+          };
+          reader.onerror = function() { resolve(); };
+          reader.readAsDataURL(fr.file);
         });
       });
-      await Promise.all(uploadPromises);
+      await Promise.all(promises);
     }
     await saveApplications();
   }
@@ -766,7 +799,7 @@ function renderDownloads() {
       <td>${escHtml(a.service)}</td>
       <td>${escHtml(Array.isArray(a.result) ? a.result.join(', ') : a.result)}</td>
       <td>${escHtml(a.updated)}</td>
-      <td><button class="btn btn-sm btn-primary" onclick="toast('Download started — connect storage for production.')">Download</button></td>
+      <td><button class="btn btn-sm btn-primary" onclick="downloadResult('${escAttr(a.id)}')">Download</button></td>
     </tr>
   `).join('');
 }
@@ -989,28 +1022,32 @@ function submitReupload() {
   var a = applications.find(function(x) { return x.id === appId; });
   if (!a) return;
 
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
-  var uid = loginData.uid;
   var svc = services[a.service];
   var docs = svc ? svc.docs : (a.docs || []).map(function(d) { return d.name || d; });
   var hasNew = false;
-  var uploadPromises = [];
+  var fileReaders = [];
 
   docs.forEach(function(docName, i) {
     if (reuploadFiles[i]) {
       hasNew = true;
       var file = reuploadFiles[i];
-      var path = 'partnerDocs/' + uid + '/' + appId + '/reupload_' + file.name;
+      var reader = new FileReader();
       (function(idx, fileName, fileType, fileSize) {
-        uploadPromises.push(
-          storageUpload(path, file).then(function(url) {
-            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, url: url, storagePath: path, status: 'Pending Review' };
-          }).catch(function(e) {
-            console.error('[REUPLOAD] Failed:', fileName, e);
-            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, status: 'Upload Failed' };
-          })
-        );
+        reader.onload = function() {
+          var data = reader.result;
+          if (fileType.startsWith('image/') && data.length > 200000) {
+            compressImage(data, 800, 0.7).then(function(compressed) {
+              a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: compressed, status: 'Pending Review' };
+            }).catch(function() {
+              a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: data, status: 'Pending Review' };
+            });
+          } else {
+            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, data: data, status: 'Pending Review' };
+          }
+        };
       })(i, file.name, file.type, file.size);
+      reader.readAsDataURL(file);
+      fileReaders.push(reader);
     }
   });
 
@@ -1020,7 +1057,7 @@ function submitReupload() {
     return;
   }
 
-  Promise.all(uploadPromises).then(function() {
+  Promise.all(fileReaders.map(function(r) { return new Promise(function(resolve) { r.onload = function() { resolve(); }; r.onerror = function() { resolve(); }; }); })).then(function() {
     a.status = 'Submitted';
     a.docStatus = 'Pending Review';
     a.updated = new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });

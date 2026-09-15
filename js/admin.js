@@ -383,7 +383,7 @@ function adminReviewApp(id) {
         <span class="badge ${d.status === 'Verified' ? 'badge-completed' : d.status === 'Correction Needed' ? 'badge-rejected' : 'badge-pending'}" style="margin-left:6px;font-size:10px">${d.status}</span>
       </div>
       <div class="doc-actions">
-        ${(d.url || d.downloadURL || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         ${d.status === 'Verified' ? `<button class="btn btn-sm" style="background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.2)" disabled>✓ Verified</button>` :
           d.status === 'Correction Needed' ? `<button class="btn btn-sm" style="background:rgba(239,68,68,.1);color:#dc2626;border:1px solid rgba(239,68,68,.2)" disabled>✗ Rejected</button>` :
           `<button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(a.id)}',${di})">Verify</button>`}
@@ -1045,7 +1045,7 @@ function renderDocRows() {
       <td>${d.date}</td>
       <td><span class="badge badge-${d.status==='Verified'?'completed':d.status.includes('Correction')||d.status.includes('Reject')?'correction':'pending'}">${d.status}</span></td>
       <td>
-        ${(d.url || d.downloadURL || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         <button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(d.appId)}',${d.docIdx})">Verify</button>
         <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc('${escAttr(d.appId)}',${d.docIdx})">Reject</button>
       </td>
@@ -1061,10 +1061,10 @@ function downloadDoc(appId, docIdx) {
   }
   const doc = a.docs[docIdx];
 
-  // Try URL first (Firebase Storage)
-  if (doc.url || doc.downloadURL) {
+  // Try base64 data
+  if (doc.data) {
     var link = document.createElement('a');
-    link.href = doc.url || doc.downloadURL;
+    link.href = doc.data;
     link.download = doc.fileName || doc.name + '.file';
     link.target = '_blank';
     document.body.appendChild(link);
@@ -1208,7 +1208,7 @@ function filterDocs(search, status) {
       <td>${d.date}</td>
       <td><span class="badge badge-${d.status==='Verified'?'completed':d.status.includes('Correction')||d.status.includes('Reject')?'correction':'pending'}">${d.status}</span></td>
       <td>
-        ${(d.url || d.downloadURL || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         <button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(d.appId)}',${d.docIdx})">Verify</button>
         <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc('${escAttr(d.appId)}',${d.docIdx})">Reject</button>
       </td>
