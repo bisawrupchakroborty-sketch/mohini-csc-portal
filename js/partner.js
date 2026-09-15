@@ -229,25 +229,36 @@ let txnCounter = 7782;
 async function saveApplications() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
-  if (!uid) { console.warn('No UID, cannot save apps'); return; }
+  console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
+  if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
     await fsSetDoc('partnerApps', uid, { apps: applications });
+    console.log('[SAVE] SUCCESS - apps saved to Firestore for uid:', uid);
+    return true;
   } catch(e) {
-    console.error('Failed to save apps:', e);
-    toast('Warning: Your application may not have been saved to server. Check your connection.');
+    console.error('[SAVE] FAILED:', e);
+    toast('Error: Application not saved to server. Check connection.');
+    return false;
   }
 }
 
 async function loadApplications() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
-  if (!uid) return;
+  console.log('[LOAD] Loading apps for uid:', uid);
+  if (!uid) { console.warn('[LOAD] No UID found'); return; }
   try {
     var doc = await fsGetDoc('partnerApps', uid);
+    console.log('[LOAD] Firestore returned:', doc);
     if (doc && doc.apps) {
       applications = doc.apps;
+      console.log('[LOAD] Loaded', applications.length, 'apps');
+    } else {
+      console.log('[LOAD] No apps found in Firestore doc');
+      applications = [];
     }
   } catch(e) {
+    console.error('[LOAD] Failed:', e);
     applications = [];
   }
   // Restore counters from saved data
@@ -645,24 +656,36 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
   };
   applications.unshift(newApp);
 
-  // Read file data asynchronously for admin download
-  if (fileReaders.length > 0) {
-    var promises = fileReaders.map(function(fr) {
-      return new Promise(function(resolve) {
-        var reader = new FileReader();
-        reader.onload = function() { newApp.docs[fr.idx].data = reader.result; resolve(); };
-        reader.onerror = function() { resolve(); };
-        reader.readAsDataURL(fr.file);
+  // Update UI immediately so user sees the app
+  closeDrawer();
+  renderApplications();
+  renderRecent();
+  renderDownloads();
+  updateDashboardStats();
+  notifCount++;
+  updateNotifBadge();
+
+  // Save to Firestore — MUST complete for data to persist
+  async function doSave() {
+    if (fileReaders.length > 0) {
+      var promises = fileReaders.map(function(fr) {
+        return new Promise(function(resolve) {
+          var reader = new FileReader();
+          reader.onload = function() { newApp.docs[fr.idx].data = reader.result; resolve(); };
+          reader.onerror = function() { resolve(); };
+          reader.readAsDataURL(fr.file);
+        });
       });
-    });
-    Promise.all(promises).then(function() { return saveApplications(); }).then(function() {
-      toast('Application submitted! Application ID: ' + appId);
-    });
-  } else {
-    saveApplications().then(function() {
-      toast('Application submitted! Application ID: ' + appId);
-    });
+      await Promise.all(promises);
+    }
+    await saveApplications();
   }
+  doSave().then(function() {
+    toast('Application ' + newApp.id + ' submitted and saved!');
+  }).catch(function(e) {
+    console.error('[SAVE] Final save failed:', e);
+    toast('Error: Application saved locally but NOT synced to server. Refresh to retry.');
+  });
 
   // Deduct from wallet if wallet payment selected
   if (selectedPayment === 'Wallet') {
@@ -683,21 +706,12 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     walletTxns.unshift(txn);
   }
 
-  // Save to localStorage
+  // Save wallet to localStorage
   saveWalletState();
-
   // Update wallet UI
   const walletEl = document.getElementById('walletBalance');
   if (walletEl) walletEl.textContent = '₹' + walletBalance.toLocaleString() + '.00';
   renderWalletTxns();
-  closeDrawer();
-  renderApplications();
-  renderRecent();
-  renderDownloads();
-  updateDashboardStats();
-
-  notifCount++;
-  updateNotifBadge();
 }
 
 // ---- Render Recent ----

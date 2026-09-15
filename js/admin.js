@@ -95,9 +95,11 @@ async function loadAdminApps() {
   // Also load from all partner app collections
   try {
     var partnerDocs = await fsGetCollection('partnerApps');
+    console.log('[ADMIN] partnerApps docs found:', partnerDocs.length);
     partnerDocs.forEach(function(pData) {
       var partnerUid = pData._id;
       var apps = pData.apps || [];
+      console.log('[ADMIN] Partner', partnerUid, 'has', apps.length, 'apps');
       apps.forEach(function(a) {
         // Partner saves partnerId field, admin uses partner field — normalize
         if (!a.partner) {
