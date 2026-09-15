@@ -232,12 +232,13 @@ async function saveApplications() {
   console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
   if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
-    // Strip base64 file data, keep Storage URLs
+    // Keep base64 data for document download (no Firebase Storage)
+    // Limit each app to max 3 docs, each max 500KB to stay under Firestore 1MB limit
     var cleanApps = applications.map(function(a) {
       var clean = Object.assign({}, a);
       if (clean.docs && clean.docs.length) {
-        clean.docs = clean.docs.map(function(d) {
-          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, status: d.status, url: d.url || '', storagePath: d.storagePath || '' };
+        clean.docs = clean.docs.slice(0, 3).map(function(d) {
+          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, data: d.data || '', status: d.status };
         });
       }
       return clean;
@@ -624,7 +625,7 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
   const dateStr = now.toLocaleDateString('en-IN', { dateStyle: 'medium' });
   const appId = '#MCS-' + appCounter++;
 
-  // Collect uploaded documents with file data
+  // Collect uploaded documents — read as base64 for Firestore storage
   const docEntries = [];
   const fileReaders = [];
   document.querySelectorAll('#formStep2 .upload-box').forEach(box => {
@@ -632,6 +633,11 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     const label = box.querySelector('.upload-info b').textContent;
     if (inp.files.length) {
       const file = inp.files[0];
+      // Limit file size to 500KB for Firestore (1MB doc limit)
+      if (file.size > 500 * 1024) {
+        toast('File "' + file.name + '" too large (max 500KB). Skipping.');
+        return;
+      }
       docEntries.push({ name: label, fileName: file.name, type: file.type, size: file.size, data: '', status: 'Pending Review' });
       fileReaders.push({ idx: docEntries.length - 1, file: file });
     }
@@ -675,23 +681,18 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
   notifCount++;
   updateNotifBadge();
 
-  // Upload files to Firebase Storage and save URLs to Firestore
+  // Read files as base64, then save to Firestore
   async function doSave() {
-    var uid = loginData.uid;
     if (fileReaders.length > 0) {
-      toast('Uploading documents...');
-      var uploadPromises = fileReaders.map(function(fr) {
-        var path = 'partnerDocs/' + uid + '/' + appId + '/' + fr.file.name;
-        return storageUpload(path, fr.file).then(function(url) {
-          newApp.docs[fr.idx].url = url;
-          newApp.docs[fr.idx].storagePath = path;
-          console.log('[UPLOAD] File uploaded:', fr.file.name);
-        }).catch(function(e) {
-          console.error('[UPLOAD] Failed:', fr.file.name, e);
-          newApp.docs[fr.idx].status = 'Upload Failed';
+      var promises = fileReaders.map(function(fr) {
+        return new Promise(function(resolve) {
+          var reader = new FileReader();
+          reader.onload = function() { newApp.docs[fr.idx].data = reader.result; resolve(); };
+          reader.onerror = function() { resolve(); };
+          reader.readAsDataURL(fr.file);
         });
       });
-      await Promise.all(uploadPromises);
+      await Promise.all(promises);
     }
     await saveApplications();
   }
@@ -762,7 +763,7 @@ function renderDownloads() {
       <td>${escHtml(a.service)}</td>
       <td>${escHtml(Array.isArray(a.result) ? a.result.join(', ') : a.result)}</td>
       <td>${escHtml(a.updated)}</td>
-      <td><button class="btn btn-sm btn-primary" onclick="downloadCompletedFiles('${escAttr(a.id)}')">Download</button></td>
+      <td><button class="btn btn-sm btn-primary" onclick="toast('Download started — connect storage for production.')">Download</button></td>
     </tr>
   `).join('');
 }
@@ -903,13 +904,11 @@ function downloadResult(appId) {
     return;
   }
 
-  // Single file — direct download via URL
   if (a.resultFiles.length === 1) {
     var f = a.resultFiles[0];
     var link = document.createElement('a');
-    link.href = f.url || f.data;
+    link.href = f.data;
     link.download = f.name;
-    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -917,40 +916,28 @@ function downloadResult(appId) {
     return;
   }
 
-  // Multiple files — open each URL
+  if (typeof JSZip === 'undefined') {
+    toast('ZIP library loading... try again.');
+    return;
+  }
+
+  var zip = new JSZip();
   a.resultFiles.forEach(function(f) {
+    var base64 = f.data.split(',')[1];
+    zip.file(f.name, base64, { base64: true });
+  });
+
+  zip.generateAsync({ type: 'blob' }).then(function(blob) {
+    var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
-    link.href = f.url || f.data;
-    link.download = f.name;
-    link.target = '_blank';
+    link.href = url;
+    link.download = a.id.replace('#', '') + '_Result.zip';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast('ZIP downloaded!');
   });
-  toast('Downloaded ' + a.resultFiles.length + ' files.');
-}
-
-// ---- Download completed application docs ----
-function downloadCompletedFiles(appId) {
-  var a = applications.find(function(x) { return x.id === appId; });
-  if (!a) return;
-  var files = a.resultFiles || [];
-  if (files.length === 0) {
-    toast('No result files available yet.');
-    return;
-  }
-  files.forEach(function(f) {
-    if (f.url) {
-      var link = document.createElement('a');
-      link.href = f.url;
-      link.download = f.name;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  });
-  toast('Downloading ' + files.length + ' file(s)...');
 }
 
 function closeModal(id) { var el = document.getElementById(id); if (el) el.classList.remove('open'); }

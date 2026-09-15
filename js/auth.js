@@ -87,25 +87,6 @@ async function fsQuery(collection, field, op, value) {
   } catch(e) { console.warn('fsQuery failed:', collection, field, op, value, e.message); return []; }
 }
 
-// Firebase Storage helpers
-async function storageUpload(path, file) {
-  var ref = fbStorage.ref(path);
-  var snap = await ref.put(file);
-  return await snap.ref.getDownloadURL();
-}
-
-async function storageDelete(path) {
-  try {
-    await fbStorage.ref(path).delete();
-  } catch(e) { console.warn('storageDelete failed:', path, e.message); }
-}
-
-async function storageGetUrl(path) {
-  try {
-    return await fbStorage.ref(path).getDownloadURL();
-  } catch(e) { console.warn('storageGetUrl failed:', path, e.message); return null; }
-}
-
 // XSS-safe escape for HTML content
 function escHtml(s) {
   return String(s).replace(/[&<>"']/g, function(m) {

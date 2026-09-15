@@ -400,8 +400,19 @@
       bar.style.background=pct<=20?'#ef4444':pct<=40?'#f97316':pct<=60?'#eab308':pct<=80?'#22c55e':'#10b981';
     }
 
+    // ---- Rate limiting for signup ----
+    var _signupAttempts = parseInt(localStorage.getItem('mohini_signup_attempts') || '0');
+    var _signupLockUntil = parseInt(localStorage.getItem('mohini_signup_lock') || '0');
+
     // ---- Step 1: Send OTP ----
     async function doSignup(){
+      // Check rate limit
+      if (Date.now() < _signupLockUntil) {
+        var mins = Math.ceil((_signupLockUntil - Date.now()) / 60000);
+        toast('Too many attempts. Try again in ' + mins + ' min.');
+        return;
+      }
+
       var name=document.getElementById('signupName').value.trim();
       var email=document.getElementById('signupEmail').value.trim();
       var mobile=document.getElementById('signupMobile').value.trim();
@@ -421,11 +432,16 @@
       var btn=document.getElementById('signupBtn');
       btn.disabled=true;btn.textContent='Sending verification code...';
 
-      // Generate OTP and store temporarily (password NOT stored in plain text)
+      // Generate OTP and store securely (with expiry time)
       var otp = String(Math.floor(100000 + Math.random() * 900000));
-      window._pendingSignup = { name:name, email:email, mobile:mobile, partnerId:partnerId, otp:otp };
-      // Store password hash in hidden input, not JS variable
-      window._signupPassword = password;
+      var otpExpiry = Date.now() + 600000; // 10 minutes
+
+      // Store only in sessionStorage (not window variable)
+      sessionStorage.setItem('mohini_signup_data', JSON.stringify({
+        name:name, email:email, mobile:mobile, partnerId:partnerId,
+        otp: otp, otpExpiry: otpExpiry, attempts: 0
+      }));
+      sessionStorage.setItem('mohini_signup_pw', password);
 
       // Send OTP via EmailJS
       emailjs.send(SVC, TPL, {
@@ -455,12 +471,36 @@
         return;
       }
 
-      var data = window._pendingSignup;
-      if(!data){ toast('Session expired. Please go back.'); return; }
+      var storedData = sessionStorage.getItem('mohini_signup_data');
+      if(!storedData){ toast('Session expired. Please go back.'); return; }
+
+      var data = JSON.parse(storedData);
+
+      // Check OTP expiry
+      if (Date.now() > data.otpExpiry) {
+        sessionStorage.removeItem('mohini_signup_data');
+        sessionStorage.removeItem('mohini_signup_pw');
+        toast('OTP expired. Please start again.');
+        goBackToSignup();
+        return;
+      }
+
+      // Check attempts (max 3)
+      if (data.attempts >= 3) {
+        sessionStorage.removeItem('mohini_signup_data');
+        sessionStorage.removeItem('mohini_signup_pw');
+        toast('Too many failed attempts. Please start again.');
+        goBackToSignup();
+        return;
+      }
+
+      // Increment attempts
+      data.attempts++;
+      sessionStorage.setItem('mohini_signup_data', JSON.stringify(data));
 
       if(otp !== data.otp){
         document.getElementById('otpError').style.display='block';
-        document.getElementById('otpError').textContent='Invalid code. Please try again.';
+        document.getElementById('otpError').textContent='Invalid code. ' + (3 - data.attempts) + ' attempts left.';
         return;
       }
 
@@ -468,9 +508,12 @@
       var btn=document.getElementById('verifyBtn');
       btn.disabled=true;btn.textContent='Creating account...';
 
+      // Get password from sessionStorage
+      var password = sessionStorage.getItem('mohini_signup_pw');
+
       try {
         var cred = await Promise.race([
-          fbSignUp(data.email, window._signupPassword, data.name),
+          fbSignUp(data.email, password, data.name),
           new Promise(function(_, reject) { setTimeout(function(){ reject(new Error('Timeout')); }, 15000); })
         ]);
         var uid = cred.user.uid;
@@ -499,8 +542,10 @@
 
         try { await cred.user.sendEmailVerification(); } catch(e) {}
         await fbSignOut();
-        window._pendingSignup = null;
-        window._signupPassword = null;
+        sessionStorage.removeItem('mohini_signup_data');
+        sessionStorage.removeItem('mohini_signup_pw');
+        localStorage.removeItem('mohini_signup_attempts');
+        localStorage.removeItem('mohini_signup_lock');
 
         // Show success
         document.getElementById('signupStep2').style.display='none';
@@ -520,7 +565,8 @@
     }
 
     function goBackToSignup(){
-      window._pendingSignup = null;
+      sessionStorage.removeItem('mohini_signup_data');
+      sessionStorage.removeItem('mohini_signup_pw');
       document.getElementById('signupStep2').style.display='none';
       document.getElementById('signupStep1').style.display='block';
       document.getElementById('signupBtn').disabled=false;

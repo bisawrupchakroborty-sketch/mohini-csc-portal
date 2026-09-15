@@ -383,7 +383,7 @@ function adminReviewApp(id) {
         <span class="badge ${d.status === 'Verified' ? 'badge-completed' : d.status === 'Correction Needed' ? 'badge-rejected' : 'badge-pending'}" style="margin-left:6px;font-size:10px">${d.status}</span>
       </div>
       <div class="doc-actions">
-        ${(d.url || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${(d.downloadURL || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         ${d.status === 'Verified' ? `<button class="btn btn-sm" style="background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.2)" disabled>✓ Verified</button>` :
           d.status === 'Correction Needed' ? `<button class="btn btn-sm" style="background:rgba(239,68,68,.1);color:#dc2626;border:1px solid rgba(239,68,68,.2)" disabled>✗ Rejected</button>` :
           `<button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(a.id)}',${di})">Verify</button>`}
@@ -1045,7 +1045,7 @@ function renderDocRows() {
       <td>${d.date}</td>
       <td><span class="badge badge-${d.status==='Verified'?'completed':d.status.includes('Correction')||d.status.includes('Reject')?'correction':'pending'}">${d.status}</span></td>
       <td>
-        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${(d.downloadURL || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         <button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(d.appId)}',${d.docIdx})">Verify</button>
         <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc('${escAttr(d.appId)}',${d.docIdx})">Reject</button>
       </td>
@@ -1056,32 +1056,37 @@ function renderDocRows() {
 function downloadDoc(appId, docIdx) {
   const a = adminApps.find(x => x.id === appId);
   if (!a || !a.docs[docIdx]) {
-    toast('No file available for download.');
+    toast('Document not found.');
     return;
   }
   const doc = a.docs[docIdx];
-  // Support Firebase Storage URL
-  if (doc.url) {
+
+  // Try downloadURL first (Firebase Storage)
+  if (doc.downloadURL) {
     var link = document.createElement('a');
-    link.href = doc.url;
+    link.href = doc.downloadURL;
     link.download = doc.fileName || doc.name + '.file';
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     toast('Downloading: ' + (doc.fileName || doc.name));
-  } else if (doc.data) {
-    // Legacy base64 fallback
-    var link = document.createElement('a');
-    link.href = doc.data;
-    link.download = doc.fileName || doc.name + '.file';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast('Downloading: ' + (doc.fileName || doc.name));
-  } else {
-    toast('No file data available for download.');
+    return;
   }
+
+  // Fallback to base64 data (legacy)
+  if (doc.data) {
+    var link2 = document.createElement('a');
+    link2.href = doc.data;
+    link2.download = doc.fileName || doc.name + '.file';
+    document.body.appendChild(link2);
+    link2.click();
+    document.body.removeChild(link2);
+    toast('Downloading: ' + (doc.fileName || doc.name));
+    return;
+  }
+
+  toast('No file available for download. Ask partner to re-upload.');
 }
 
 function verifyDoc(appId, docIdx) {
