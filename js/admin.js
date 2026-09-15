@@ -15,13 +15,12 @@ let adminServices = [
   { name:'Other CSC Service', type:'Other', desc:'Configure additional services later', price:100, partnerPrice:80, enabled:false, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New Application',price:100,partnerPrice:80},{name:'Update',price:80,partnerPrice:60},{name:'Correction',price:80,partnerPrice:60},{name:'Other',price:100,partnerPrice:80}], docs:['Supporting Document 1','Supporting Document 2'], instructions:'Default template — configure per service.' },
 ];
 
-async function saveAdminServices() {
-  var promises = adminServices.map(function(s) {
-    return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), s).catch(function(e) {
+function saveAdminServices() {
+  adminServices.forEach(function(s) {
+    fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), s).catch(function(e) {
       console.error('Failed to save service:', s.name, e);
     });
   });
-  await Promise.all(promises);
 }
 
 async function loadAdminServices() {

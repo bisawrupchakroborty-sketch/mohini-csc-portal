@@ -57,7 +57,7 @@ async function fsGetDoc(collection, docId) {
       _fsTimeout(10000)
     ]);
     return snap && snap.exists ? snap.data() : null;
-  } catch(e) { return null; }
+  } catch(e) { console.warn('fsGetDoc failed:', collection, docId, e.message); return null; }
 }
 
 async function fsGetCollection(collection) {
@@ -67,7 +67,7 @@ async function fsGetCollection(collection) {
       _fsTimeout(10000)
     ]);
     return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
-  } catch(e) { return []; }
+  } catch(e) { console.warn('fsGetCollection failed:', collection, e.message); return []; }
 }
 
 async function fsDeleteDoc(collection, docId) {
@@ -84,7 +84,7 @@ async function fsQuery(collection, field, op, value) {
       _fsTimeout(10000)
     ]);
     return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
-  } catch(e) { return []; }
+  } catch(e) { console.warn('fsQuery failed:', collection, field, op, value, e.message); return []; }
 }
 
 // XSS-safe escape for HTML content

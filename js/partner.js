@@ -92,12 +92,17 @@ function deleteAccount() {
 // ---- Demo Data ----
 let applications = [];
 
-// Services will be loaded from Firestore via loadServicesFromAdmin()
-// Empty until Firestore loads — prevents showing stale hardcoded data
-var services = {};
+// Default services — will be REPLACED by Firestore data when it loads
+var services = {
+  'Aadhaar Update': { price:120, icon:'A', iconClass:'aadhaar', docs:['Existing Aadhaar Copy','Proof of Identity / Address','Additional Supporting Document'], requestTypes:[{name:'Address Update',price:100},{name:'Name Update',price:120},{name:'New Application',price:150}], hasPartnerId:false },
+  'PAN Services': { price:80, icon:'P', iconClass:'pan', docs:['Proof of Identity','Photograph','Aadhaar Copy'], requestTypes:[{name:'New PAN Card',price:100},{name:'PAN Correction',price:80}], hasPartnerId:false },
+  'Ration Services': { price:70, icon:'R', iconClass:'ration', docs:['Ration Card Copy','Address Proof','Identity Proof'], requestTypes:[{name:'New Ration Card',price:100},{name:'Member Addition',price:60}], hasPartnerId:false },
+  'Bill Payment': { price:25, icon:'₹', iconClass:'bill', docs:['Previous Bill Copy','Account Number Proof'], requestTypes:[{name:'Electricity Bill',price:25}], hasPartnerId:false },
+  'Other CSC Service': { price:100, icon:'+', iconClass:'other', docs:['Supporting Document 1','Supporting Document 2'], requestTypes:[{name:'New Application',price:100}], hasPartnerId:false }
+};
 
-// Services are loaded from Firestore via loadServicesFromAdmin()
-// No instant render — wait for Firestore data to avoid flash
+// Show default services instantly — will be replaced by Firestore data
+setTimeout(function() { renderServiceCards(); }, 0);
 
 function loadServicesFromAdmin() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
@@ -107,7 +112,20 @@ function loadServicesFromAdmin() {
   var hasPartnerId = !!myPartnerId;
 
   return fsGetCollection('services').then(function(adminSvc) {
-    // Always rebuild from Firestore — clear hardcoded services
+    if (!adminSvc || adminSvc.length === 0) {
+      // Firestore returned nothing — keep default services but apply partner pricing
+      Object.keys(services).forEach(function(name) {
+        var s = services[name];
+        s.hasPartnerId = hasPartnerId;
+        if (hasPartnerId && s.partnerPrice) {
+          s.originalPrice = s.price;
+          s.price = s.partnerPrice;
+        }
+      });
+      renderServiceCards();
+      return;
+    }
+    // Rebuild services from Firestore
     services = {};
     (adminSvc || []).forEach(function(s) {
       if (s.enabled && !s.maintenance) {
