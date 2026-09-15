@@ -103,28 +103,53 @@ var services = {
 function loadServicesFromAdmin() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
   var myPartnerId = loginData.partnerId || '';
+  var myUid = loginData.uid || '';
 
-  fsGetDoc('settings', 'general').then(function(settingsDoc) {
-    return fsGetCollection('services');
-  }).then(function(adminSvc) {
-    // Check if partner has a bought Partner ID
-    return fsQuery('partnerIds', 'partnerId', '==', myPartnerId).then(function(boughtIds) {
-      var hasPartnerId = boughtIds.length > 0 && boughtIds[0].usedBy;
-      services = {};
-      (adminSvc || []).forEach(function(s) {
-        if (s.enabled && !s.maintenance) {
-          var iconChar = s.name.charAt(0);
-          var iconCls = 'other';
-          if (s.name.includes('Aadhaar')) { iconChar = 'A'; iconCls = 'aadhaar'; }
-          else if (s.name.includes('PAN')) { iconChar = 'P'; iconCls = 'pan'; }
-          else if (s.name.includes('Ration')) { iconChar = 'R'; iconCls = 'ration'; }
-          else if (s.name.includes('Bill')) { iconChar = '₹'; iconCls = 'bill'; }
-          var showPrice = s.paymentEnabled ? (hasPartnerId ? s.partnerPrice : s.price) : 0;
-          services[s.name] = { type: s.type || '', price: showPrice, originalPrice: s.price, partnerPrice: s.partnerPrice, hasPartnerId: hasPartnerId, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false };
-        }
-      });
-      renderServiceCards();
+  // Run all queries in parallel instead of sequentially
+  var svcPromise = fsGetCollection('services');
+  var p1 = myPartnerId ? fsQuery('partnerIds', 'partnerId', '==', myPartnerId) : Promise.resolve([]);
+  var p2 = myUid ? fsQuery('partnerIds', 'usedBy', '==', myUid) : Promise.resolve([]);
+
+  Promise.all([svcPromise, p1, p2]).then(function(results) {
+    var adminSvc = results[0];
+    var boughtIds = results[1];
+    var boughtByUid = results[2];
+
+    var hasPartnerId = false;
+
+    // Method 1: partnerIds by partnerId
+    if (boughtIds.length > 0 && boughtIds[0].usedBy) {
+      hasPartnerId = true;
+    }
+
+    // Method 2: partnerIds by partnerId (timing issue - assigned but usedBy not set yet)
+    if (!hasPartnerId && boughtIds.length > 0 && myPartnerId) {
+      hasPartnerId = true;
+    }
+
+    // Method 3: partnerIds by usedBy UID
+    if (!hasPartnerId && boughtByUid.length > 0 && boughtByUid[0].partnerId) {
+      hasPartnerId = true;
+      // Save detected partnerId for future use
+      loginData.partnerId = boughtByUid[0].partnerId;
+      localStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
+      if (myUid) fsSetDoc('partners', myUid, { partnerId: boughtByUid[0].partnerId }).catch(function(){});
+    }
+
+    services = {};
+    (adminSvc || []).forEach(function(s) {
+      if (s.enabled && !s.maintenance) {
+        var iconChar = s.name.charAt(0);
+        var iconCls = 'other';
+        if (s.name.includes('Aadhaar')) { iconChar = 'A'; iconCls = 'aadhaar'; }
+        else if (s.name.includes('PAN')) { iconChar = 'P'; iconCls = 'pan'; }
+        else if (s.name.includes('Ration')) { iconChar = 'R'; iconCls = 'ration'; }
+        else if (s.name.includes('Bill')) { iconChar = '₹'; iconCls = 'bill'; }
+        var showPrice = s.paymentEnabled ? (hasPartnerId ? s.partnerPrice : s.price) : 0;
+        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: s.price, partnerPrice: s.partnerPrice, hasPartnerId: hasPartnerId, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false };
+      }
     });
+    renderServiceCards();
   }).catch(function(e) {
     console.error('Failed to load services from Firestore:', e);
     renderServiceCards();
@@ -1168,10 +1193,13 @@ fbOnAuthStateChanged(function(user) {
   checkMaintenance().then(function(inMaintenance) {
     if (inMaintenance) return;
     if (checkLogin()) {
-      loadServicesFromAdmin();
-      loadApplications().then(function() {
-        return loadWalletState();
-      }).then(function() {
+      // Run all data loads in parallel
+      Promise.all([
+        loadServicesFromAdmin(),
+        loadApplications(),
+        loadWalletState(),
+        renderTickets()
+      ]).then(function() {
         updateDashboardStats();
         renderRecent();
         renderApplications();
@@ -1184,7 +1212,6 @@ fbOnAuthStateChanged(function(user) {
         renderDownloads();
         renderWalletTxns();
       });
-      renderTickets();
     }
   });
 });

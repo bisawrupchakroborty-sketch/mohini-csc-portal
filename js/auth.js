@@ -46,14 +46,14 @@ function _fsTimeout(ms) {
 async function fsSetDoc(collection, docId, data) {
   return await Promise.race([
     db.collection(collection).doc(docId).set(data, { merge: true }),
-    _fsTimeout(10000)
+    _fsTimeout(8000)
   ]);
 }
 
 async function fsGetDoc(collection, docId) {
   var snap = await Promise.race([
     db.collection(collection).doc(docId).get(),
-    _fsTimeout(10000)
+    _fsTimeout(8000)
   ]);
   return snap.exists ? snap.data() : null;
 }
@@ -61,7 +61,7 @@ async function fsGetDoc(collection, docId) {
 async function fsGetCollection(collection) {
   var snap = await Promise.race([
     db.collection(collection).get(),
-    _fsTimeout(10000)
+    _fsTimeout(8000)
   ]);
   return snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); });
 }
@@ -69,14 +69,14 @@ async function fsGetCollection(collection) {
 async function fsDeleteDoc(collection, docId) {
   return await Promise.race([
     db.collection(collection).doc(docId).delete(),
-    _fsTimeout(10000)
+    _fsTimeout(8000)
   ]);
 }
 
 async function fsQuery(collection, field, op, value) {
   var snap = await Promise.race([
     db.collection(collection).where(field, op, value).get(),
-    _fsTimeout(10000)
+    _fsTimeout(8000)
   ]);
   return snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); });
 }
