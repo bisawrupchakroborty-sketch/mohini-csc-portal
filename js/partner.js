@@ -232,13 +232,12 @@ async function saveApplications() {
   console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
   if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
-    // Keep base64 data for document download (no Firebase Storage)
-    // Limit each app to max 3 docs, each max 500KB to stay under Firestore 1MB limit
+    // Strip base64, keep Storage URLs
     var cleanApps = applications.map(function(a) {
       var clean = Object.assign({}, a);
       if (clean.docs && clean.docs.length) {
-        clean.docs = clean.docs.slice(0, 3).map(function(d) {
-          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, data: d.data || '', status: d.status };
+        clean.docs = clean.docs.slice(0, 5).map(function(d) {
+          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, status: d.status, url: d.url || '', storagePath: d.storagePath || '' };
         });
       }
       return clean;
@@ -633,9 +632,9 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     const label = box.querySelector('.upload-info b').textContent;
     if (inp.files.length) {
       const file = inp.files[0];
-      // Limit file size to 500KB for Firestore (1MB doc limit)
-      if (file.size > 500 * 1024) {
-        toast('File "' + file.name + '" too large (max 500KB). Skipping.');
+      // Files uploaded to Firebase Storage (up to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast('File "' + file.name + '" too large (max 10MB). Skipping.');
         return;
       }
       docEntries.push({ name: label, fileName: file.name, type: file.type, size: file.size, data: '', status: 'Pending Review' });
@@ -681,18 +680,22 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
   notifCount++;
   updateNotifBadge();
 
-  // Read files as base64, then save to Firestore
+  // Upload files to Firebase Storage, then save URLs to Firestore
   async function doSave() {
+    var uid = loginData.uid;
     if (fileReaders.length > 0) {
-      var promises = fileReaders.map(function(fr) {
-        return new Promise(function(resolve) {
-          var reader = new FileReader();
-          reader.onload = function() { newApp.docs[fr.idx].data = reader.result; resolve(); };
-          reader.onerror = function() { resolve(); };
-          reader.readAsDataURL(fr.file);
+      toast('Uploading documents...');
+      var uploadPromises = fileReaders.map(function(fr) {
+        var path = 'partnerDocs/' + uid + '/' + appId + '/' + fr.file.name;
+        return storageUpload(path, fr.file).then(function(url) {
+          newApp.docs[fr.idx].url = url;
+          newApp.docs[fr.idx].storagePath = path;
+        }).catch(function(e) {
+          console.error('[UPLOAD] Failed:', fr.file.name, e);
+          newApp.docs[fr.idx].status = 'Upload Failed';
         });
       });
-      await Promise.all(promises);
+      await Promise.all(uploadPromises);
     }
     await saveApplications();
   }
@@ -986,30 +989,28 @@ function submitReupload() {
   var a = applications.find(function(x) { return x.id === appId; });
   if (!a) return;
 
+  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var uid = loginData.uid;
   var svc = services[a.service];
   var docs = svc ? svc.docs : (a.docs || []).map(function(d) { return d.name || d; });
   var hasNew = false;
-  var fileReaders = [];
+  var uploadPromises = [];
 
   docs.forEach(function(docName, i) {
     if (reuploadFiles[i]) {
       hasNew = true;
       var file = reuploadFiles[i];
-      var reader = new FileReader();
+      var path = 'partnerDocs/' + uid + '/' + appId + '/reupload_' + file.name;
       (function(idx, fileName, fileType, fileSize) {
-        reader.onload = function() {
-          a.docs[idx] = {
-            name: docs[idx],
-            fileName: fileName,
-            type: fileType,
-            size: fileSize,
-            data: reader.result,
-            status: 'Pending Review'
-          };
-        };
+        uploadPromises.push(
+          storageUpload(path, file).then(function(url) {
+            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, url: url, storagePath: path, status: 'Pending Review' };
+          }).catch(function(e) {
+            console.error('[REUPLOAD] Failed:', fileName, e);
+            a.docs[idx] = { name: docs[idx], fileName: fileName, type: fileType, size: fileSize, status: 'Upload Failed' };
+          })
+        );
       })(i, file.name, file.type, file.size);
-      reader.readAsDataURL(file);
-      fileReaders.push(reader);
     }
   });
 
@@ -1019,7 +1020,7 @@ function submitReupload() {
     return;
   }
 
-  Promise.all(fileReaders.map(function(r) { return new Promise(function(resolve) { r.onload = function() { resolve(); }; r.onerror = function() { resolve(); }; }); })).then(function() {
+  Promise.all(uploadPromises).then(function() {
     a.status = 'Submitted';
     a.docStatus = 'Pending Review';
     a.updated = new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });
