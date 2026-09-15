@@ -15,12 +15,19 @@ let adminServices = [
   { name:'Other CSC Service', type:'Other', desc:'Configure additional services later', price:100, partnerPrice:80, enabled:false, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New Application',price:100,partnerPrice:80},{name:'Update',price:80,partnerPrice:60},{name:'Correction',price:80,partnerPrice:60},{name:'Other',price:100,partnerPrice:80}], docs:['Supporting Document 1','Supporting Document 2'], instructions:'Default template — configure per service.' },
 ];
 
-function saveAdminServices() {
-  adminServices.forEach(function(s) {
-    fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), s).catch(function(e) {
+async function saveAdminServices() {
+  var promises = adminServices.map(function(s) {
+    return fsSetDoc('services', s.name.replace(/[\/\.\#\[\]\$]/g, '_'), {
+      name: s.name, type: s.type, price: s.price, partnerPrice: s.partnerPrice,
+      desc: s.desc, enabled: s.enabled, maintenance: s.maintenance || false,
+      paymentEnabled: s.paymentEnabled !== false, requestTypes: s.requestTypes || [],
+      docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
+      aadhaarRequired: s.aadhaarRequired || false
+    }).catch(function(e) {
       console.error('Failed to save service:', s.name, e);
     });
   });
+  await Promise.all(promises);
 }
 
 async function loadAdminServices() {
@@ -36,6 +43,7 @@ async function loadAdminServices() {
   } catch(e) {
     console.error('Failed to load services from Firestore:', e);
   }
+  renderServices();
 }
 
 const statusMap = {
@@ -75,9 +83,12 @@ async function loadAdminApps() {
       var partnerUid = pData._id;
       var apps = pData.apps || [];
       apps.forEach(function(a) {
+        // Partner saves partnerId field, admin uses partner field — normalize
         if (!a.partner) {
-          a.partner = partnerUid;
-          a.partnerName = partnerUid;
+          a.partner = a.partnerId || partnerUid;
+        }
+        if (!a.partnerName || a.partnerName === partnerUid) {
+          a.partnerName = a.partnerId || 'Partner';
         }
         if (!a.docs) a.docs = [];
         a.docs.forEach(function(d) {
@@ -91,6 +102,10 @@ async function loadAdminApps() {
           existing.request = a.request;
           existing.note = a.note;
           existing.docs = a.docs;
+          existing.partner = a.partner;
+          existing.partnerName = a.partnerName;
+          existing.amount = a.amount;
+          existing.status = a.status;
         } else {
           adminApps.push(a);
         }
@@ -131,6 +146,7 @@ async function loadPartners() {
     partnerProfiles.forEach(function(u) {
       partners.push({
         id: u.partnerId || u._id,
+        uid: u._id,
         name: u.name,
         mobile: u.mobile || '',
         email: u.email,
@@ -145,14 +161,15 @@ async function loadPartners() {
   } catch(e) { partners = []; }
 
   // Count applications and wallet per partner from Firestore
+  // partnerApps is stored under Firebase Auth UID, not partnerId
   for (var i = 0; i < partners.length; i++) {
     var p = partners[i];
     try {
-      var appDoc = await fsGetDoc('partnerApps', p.id);
+      var appDoc = await fsGetDoc('partnerApps', p.uid);
       if (appDoc && appDoc.apps) p.apps = appDoc.apps.length;
     } catch(e) {}
     try {
-      var walletDoc = await fsGetDoc('partnerWallets', p.id);
+      var walletDoc = await fsGetDoc('partnerWallets', p.uid);
       if (walletDoc) {
         var txns = walletDoc.txns || [];
         var balance = 0;
@@ -456,10 +473,10 @@ function adminAction(id, action) {
 }
 
 function syncAppToPartner(a) {
-  var partnerId = a.partnerId || a.partner;
-  if (!partnerId) return;
+  var docId = a.ownerUid || a.partnerId || a.partner;
+  if (!docId) return;
 
-  fsGetDoc('partnerApps', partnerId).then(function(doc) {
+  fsGetDoc('partnerApps', docId).then(function(doc) {
     var apps = (doc && doc.apps) ? doc.apps : [];
     var idx = apps.findIndex(function(x) { return x.id === a.id; });
     if (idx !== -1) {
@@ -472,8 +489,8 @@ function syncAppToPartner(a) {
     } else {
       apps.push(a);
     }
-    fsSetDoc('partnerApps', partnerId, { apps: apps }).catch(function(){});
-  }).catch(function(){});
+    fsSetDoc('partnerApps', docId, { apps: apps }).catch(function(e){ console.warn('syncAppToPartner failed:', e); });
+  }).catch(function(e){ console.warn('syncAppToPartner read failed:', e); });
 }
 
 // ---- Partners ----
@@ -1450,13 +1467,35 @@ function updateAdminStats() {
 
 // ---- Init ----
 function initAdmin() {
-  // Load persisted data
-  loadAdminApps();
-  loadPartners();
-  loadAdminServices();
-  initMaintenanceUI();
+  // Load persisted data — await all before rendering
+  Promise.all([
+    loadAdminApps(),
+    loadPartners(),
+    loadAdminServices()
+  ]).then(function() {
+    updateAdminStats();
+    renderOverviewQueue();
+    renderAdminApps();
+    renderPartners();
+    renderServices();
+    renderPayments();
+    renderDocRows();
+    renderAdminTickets();
+    initMaintenanceUI();
+  }).catch(function(e) {
+    console.error('Admin init error:', e);
+    updateAdminStats();
+    renderOverviewQueue();
+    renderAdminApps();
+    renderPartners();
+    renderServices();
+    renderPayments();
+    renderDocRows();
+    renderAdminTickets();
+    initMaintenanceUI();
+  });
 
-  // Navigation
+  // Navigation (sync — no need to wait)
   document.querySelectorAll('.nav-item').forEach(function(b) {
     b.addEventListener('click', function() { switchView(b.dataset.view); });
   });
@@ -1489,30 +1528,25 @@ function initAdmin() {
   var tt = document.getElementById('settThemeText');
   var tth = document.getElementById('settThemeTextHex');
   if (tt && tth) tt.addEventListener('input', function() { tth.value = this.value; });
-
-  updateAdminStats();
-  renderOverviewQueue();
-  renderAdminApps();
-  renderPartners();
-  renderServices();
-  renderPayments();
-  renderDocRows();
-  renderAdminTickets();
 }
-
 function refreshAdminData() {
-  loadAdminApps();
-  loadPartners();
-  loadAdminServices();
-  updateAdminStats();
-  renderOverviewQueue();
-  renderAdminApps();
-  renderPartners();
-  renderPayments();
-  renderServices();
-  renderDocRows();
-  renderAdminTickets();
-  toast('Admin data refreshed!');
+  Promise.all([
+    loadAdminApps(),
+    loadPartners(),
+    loadAdminServices()
+  ]).then(function() {
+    updateAdminStats();
+    renderOverviewQueue();
+    renderAdminApps();
+    renderPartners();
+    renderPayments();
+    renderServices();
+    renderDocRows();
+    renderAdminTickets();
+    toast('Admin data refreshed!');
+  }).catch(function() {
+    toast('Refresh completed with errors');
+  });
 }
 
 // ---- Service File Upload Handlers ----

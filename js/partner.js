@@ -32,7 +32,7 @@ function checkLogin() {
     document.querySelectorAll('.sidebar-user small').forEach(el => el.textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID');
     document.querySelectorAll('.profile-pill small').forEach(el => el.textContent = partnerId ? 'Partner ID: ' + partnerId : 'No Partner ID');
     document.querySelectorAll('.avatar-sm').forEach(el => {
-      if (el.textContent === 'MC') el.textContent = userName.charAt(0).toUpperCase();
+      el.textContent = userName.charAt(0).toUpperCase();
     });
     return true;
   } catch(e) {
@@ -318,16 +318,29 @@ if (_notifBtn) _notifBtn.onclick = (e) => {
 document.addEventListener('click', () => { var nd = document.getElementById('notifDropdown'); if (nd) nd.classList.remove('show'); });
 
 // ---- Service Drawer ----
+function renderDocUploads(docs) {
+  var el = document.getElementById('docUploadList');
+  if (!el) return;
+  el.innerHTML = docs.map(function(docName, i) {
+    var isReq = i < 2;
+    return '<label class="upload-box" id="uploadDoc' + (i+1) + '"' + (isReq ? ' data-required="true"' : '') + '>' +
+      '<input type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleUpload(this,\'uploadDoc' + (i+1) + '\')">' +
+      '<div class="upload-icon">↑</div>' +
+      '<div class="upload-info"><b>' + escHtml(docName) + '</b><small>JPG, PNG or PDF · ' + (isReq ? 'Required' : 'Optional') + '</small></div>' +
+      '<span class="upload-status">Browse</span></label>';
+  }).join('');
+}
+
 function openService(service) {
   currentService = service;
   currentStep = 1;
-  document.getElementById('drawerTitle').textContent = service + ' — New Application';
-  document.getElementById('applicationForm').reset();
-  document.querySelectorAll('.upload-box').forEach(b => { b.classList.remove('has-file'); b.querySelector('.upload-status').textContent = 'Browse'; b.querySelector('.upload-status').classList.remove('ok'); });
+  var dt = document.getElementById('drawerTitle');
+  if (dt) dt.textContent = service + ' — New Application';
+  var af = document.getElementById('applicationForm');
+  if (af) af.reset();
 
   // Populate request type dropdown dynamically from loaded services
   var reqSelect = document.getElementById('requestType');
-  // Use the globally loaded services from Firestore (via loadServicesFromAdmin)
   var svcData = services[service];
   var reqTypes = (svcData && svcData.requestTypes) ? svcData.requestTypes : [{name:'New Application',price:svcData?svcData.price:0,partnerPrice:svcData?svcData.partnerPrice:0}];
   reqSelect.innerHTML = reqTypes.map(function(r) {
@@ -342,6 +355,10 @@ function openService(service) {
   window._currentReqPrice = initPrice;
   window._currentReqPartnerPrice = initPartnerPrice;
   updateReqPriceDisplay(initPrice, initPartnerPrice);
+
+  // Render document upload boxes dynamically per service
+  var svcDocs = (svcData && svcData.docs) ? svcData.docs : ['Photo', 'ID Proof'];
+  renderDocUploads(svcDocs);
 
   // Listen for type change
   reqSelect.onchange = function() {
@@ -595,7 +612,8 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     gatewayRef: paymentInfo ? paymentInfo.razorpay_payment_id : 'WALLET',
     orderId: paymentInfo ? paymentInfo.razorpay_order_id : '',
     partnerId: myPartnerId,
-    partnerName: loginData.name || 'Partner'
+    partnerName: loginData.name || 'Partner',
+    ownerUid: loginData.uid || ''
   };
   applications.unshift(newApp);
 

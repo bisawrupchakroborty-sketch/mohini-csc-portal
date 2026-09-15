@@ -458,16 +458,26 @@
         ]);
         var uid = cred.user.uid;
 
-        // Save profile to Firestore (non-blocking)
-        fsSetDoc('partners', uid, {
-          name: data.name, email: data.email, mobile: data.mobile,
-          partnerId: data.partnerId || null, status: 'Active',
-          wallet: 0, apps: 0,
-          joined: new Date().toISOString(), createdAt: new Date().toISOString()
-        }).catch(function(e){});
+        // Save profile to Firestore (MUST await — login depends on this)
+        try {
+          await Promise.race([
+            fsSetDoc('partners', uid, {
+              name: data.name, email: data.email, mobile: data.mobile,
+              partnerId: data.partnerId || null, status: 'Active',
+              wallet: 0, apps: 0,
+              joined: new Date().toISOString(), createdAt: new Date().toISOString()
+            }),
+            new Promise(function(_, r){ setTimeout(r, 8000); })
+          ]);
+        } catch(e) { console.warn('Failed to save partner profile:', e); }
 
         if(data.partnerId){
-          fsSetDoc('partnerIds', data.partnerId, { usedBy: uid }).catch(function(e){});
+          try {
+            await Promise.race([
+              fsSetDoc('partnerIds', data.partnerId, { usedBy: uid, email: data.email, name: data.name, phone: data.mobile }),
+              new Promise(function(_, r){ setTimeout(r, 8000); })
+            ]);
+          } catch(e) { console.warn('Failed to save partnerIds usedBy:', e); }
         }
 
         try { await cred.user.sendEmailVerification(); } catch(e) {}
