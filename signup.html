@@ -340,6 +340,25 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
+    // Check maintenance mode
+    fsGetDoc('settings', 'maintenance').then(function(doc) {
+      if (doc && doc.enabled === true) {
+        document.body.innerHTML = '';
+        document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+        document.head.appendChild(link);
+        var s = document.createElement('script');
+        s.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+        s.onload = function() {
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f6f8fb;font-family:Inter,system-ui,sans-serif;text-align:center;padding:24px"><div style="max-width:480px;width:100%"><div style="width:300px;height:300px;margin:0 auto 24px"><lottie-player src="assets/lottie/maintenance.json" background="transparent" speed="1" style="width:300px;height:300px" loop autoplay></lottie-player></div><h1 style="font-size:28px;font-weight:800;color:#172033;margin-bottom:12px">Under Maintenance</h1><p style="color:#64748b;font-size:15px;line-height:1.6;margin-bottom:32px">We are currently performing some updates to serve you better. We will be back shortly. Thank you for your patience!</p><p style="color:#94a3b8;font-size:12px;margin-top:32px">Established 2017 · Mohini CSC Centre</p></div></div>';
+        };
+        document.head.appendChild(s);
+        return;
+      }
+    }).catch(function(){});
+
     emailjs.init('1krGbBYt3akDo6BMT');
     var SVC='service_ejlycjk',TPL='template_051qxhm';
 
@@ -457,10 +476,7 @@
         window._signupPassword = null;
 
         // Show success
-        document.getElementById('otpSection').style.display='none';
-        document.getElementById('verifyBtn').style.display='none';
-        document.getElementById('otpInfo').style.display='none';
-        document.getElementById('successBox').style.display='block';
+        document.getElementById('signupStep2').style.display='none';
         toast('Account created! You can now login.');
         setTimeout(function(){window.location.href='login.html'},2000);
 

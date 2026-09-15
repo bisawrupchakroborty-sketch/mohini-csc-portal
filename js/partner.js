@@ -270,18 +270,24 @@ function updateDashboardStats() {
 // ---- Navigation ----
 function switchView(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(view + 'View').classList.add('active');
+  var el = document.getElementById(view + 'View');
+  if (el) el.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
   const titles = {
     dashboard:['Overview','Dashboard'], services:['Service Catalog','Services'],
     applications:['Workflow','My Applications'], wallet:['Finance','Wallet & Payments'],
     downloads:['Files','Downloads'], support:['Help Desk','Support']
   };
-  document.getElementById('pageKicker').textContent = titles[view][0];
-  document.getElementById('pageTitle').textContent = titles[view][1];
+  if (titles[view]) {
+    var pk = document.getElementById('pageKicker');
+    var pt = document.getElementById('pageTitle');
+    if (pk) pk.textContent = titles[view][0];
+    if (pt) pt.textContent = titles[view][1];
+  }
+  var sb = document.getElementById('sidebar');
+  if (sb) sb.classList.remove('open');
   if (view === 'applications') renderApplications();
   if (view === 'downloads') renderDownloads();
-  document.getElementById('sidebar').classList.remove('open');
 }
 
 document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
@@ -507,7 +513,7 @@ function openRazorpayCheckout(svc, custName, custMobile, payAmount) {
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_order_id: response.razorpay_order_id || '',
         razorpay_signature: response.razorpay_signature || ''
-      });
+      }, payAmount);
     },
     prefill: {
       name: custName,
@@ -658,11 +664,11 @@ function renderDownloads() {
   }
   rows.innerHTML = completed.map(a => `
     <tr>
-      <td><b>${a.id}</b></td>
+      <td><b>${escHtml(a.id)}</b></td>
       <td>${escHtml(a.customer)}</td>
-      <td>${a.service}</td>
-      <td>${a.result}</td>
-      <td>${a.updated}</td>
+      <td>${escHtml(a.service)}</td>
+      <td>${escHtml(Array.isArray(a.result) ? a.result.join(', ') : a.result)}</td>
+      <td>${escHtml(a.updated)}</td>
       <td><button class="btn btn-sm btn-primary" onclick="toast('Download started — connect storage for production.')">Download</button></td>
     </tr>
   `).join('');
@@ -678,12 +684,12 @@ function renderWalletTxns() {
   }
   rows.innerHTML = walletTxns.map(t => `
     <tr>
-      <td><b>${t.id}</b></td>
-      <td>${t.type}</td>
-      <td>${t.app}</td>
+      <td><b>${escHtml(t.id)}</b></td>
+      <td>${escHtml(t.type)}</td>
+      <td>${escHtml(t.app)}</td>
       <td>${t.amount < 0 ? '− ' : '+ '}₹${Math.abs(t.amount)}</td>
-      <td><span class="badge badge-completed">${t.status}</span></td>
-      <td>${t.date}</td>
+      <td><span class="badge badge-completed">${escHtml(t.status)}</span></td>
+      <td>${escHtml(t.date)}</td>
     </tr>
   `).join('');
   const el = (id) => document.getElementById(id);
@@ -927,9 +933,14 @@ function submitReupload() {
     closeModal('reuploadModal');
     renderApplications();
     toast('Documents re-uploaded! Status set to Submitted.');
+  }).catch(function() {
+    saveApplications();
+    closeModal('reuploadModal');
+    renderApplications();
+    toast('Documents re-uploaded!');
   });
 }
-document.getElementById('addMoneyModal').onclick = (e) => { if (e.target === document.getElementById('addMoneyModal')) closeModal('addMoneyModal'); };
+var _addMoneyModal = document.getElementById('addMoneyModal'); if (_addMoneyModal) _addMoneyModal.onclick = (e) => { if (e.target === _addMoneyModal) closeModal('addMoneyModal'); };
 
 // ---- Add Money to Wallet ----
 function openAddMoneyModal() {
@@ -994,7 +1005,8 @@ function payAddMoney() {
 
 function loadTickets() {
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
-  var myId = loginData.partnerId || 'MCS-001';
+  var myId = loginData.uid;
+  if (!myId) return Promise.resolve([]);
   return fsGetDoc('partnerApps', myId).then(function(doc) {
     var tickets = (doc && doc.tickets) ? doc.tickets : [];
     return tickets;
@@ -1034,7 +1046,8 @@ function submitTicket() {
   if (!appId || !desc) { toast('Please fill in application number and description.'); return; }
 
   var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
-  var myId = loginData.partnerId || 'MCS-001';
+  var myId = loginData.uid;
+  var myPartnerId = loginData.partnerId || '';
   var now = formatDate(new Date());
 
   // Get current ticket count from Firestore for unique ID
@@ -1095,7 +1108,7 @@ function toast(msg) {
 }
 
 // ---- Init ----
-let notifCount = 3;
+let notifCount = 0;
 function updateNotifBadge() {
   const badge = document.querySelector('#notifBtn .badge');
   if (badge) badge.textContent = notifCount;
@@ -1103,35 +1116,39 @@ function updateNotifBadge() {
 
 // Check maintenance mode (synced via Firestore from admin)
 function checkMaintenance() {
-  // Check Firestore for maintenance status
-  fsGetDoc('settings', 'maintenance').then(function(doc) {
+  return fsGetDoc('settings', 'maintenance').then(function(doc) {
     if (doc && doc.enabled === true) {
-      document.body.innerHTML = '';
-      document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
-      document.head.appendChild(link);
-      var s = document.createElement('script');
-      s.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
-      s.onload = function() {
-        document.body.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f6f8fb;font-family:Inter,system-ui,sans-serif;text-align:center;padding:24px">
-            <div style="max-width:480px;width:100%">
-              <div style="width:300px;height:300px;margin:0 auto 24px">
-                <lottie-player src="assets/lottie/maintenance.json" background="transparent" speed="1" style="width:300px;height:300px" loop autoplay></lottie-player>
-              </div>
-              <h1 style="font-size:28px;font-weight:800;color:#172033;margin-bottom:12px">Under Maintenance</h1>
-              <p style="color:#64748b;font-size:15px;line-height:1.6;margin-bottom:32px">We're currently performing some updates to serve you better. We'll be back shortly. Thank you for your patience!</p>
-              <p style="color:#94a3b8;font-size:12px;margin-top:32px">Established 2017 · Mohini CSC Centre</p>
-            </div>
-          </div>
-        `;
-      };
-      document.head.appendChild(s);
+      showMaintenancePage();
+      return true;
     }
-  }).catch(function(){});
-  return true;
+    return false;
+  }).catch(function() { return false; });
+}
+
+function showMaintenancePage() {
+  document.body.innerHTML = '';
+  document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+  document.head.appendChild(link);
+  var s = document.createElement('script');
+  s.src = 'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js';
+  s.onload = function() {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f6f8fb;font-family:Inter,system-ui,sans-serif;text-align:center;padding:24px">
+        <div style="max-width:480px;width:100%">
+          <div style="width:300px;height:300px;margin:0 auto 24px">
+            <lottie-player src="assets/lottie/maintenance.json" background="transparent" speed="1" style="width:300px;height:300px" loop autoplay></lottie-player>
+          </div>
+          <h1 style="font-size:28px;font-weight:800;color:#172033;margin-bottom:12px">Under Maintenance</h1>
+          <p style="color:#64748b;font-size:15px;line-height:1.6;margin-bottom:32px">We're currently performing some updates to serve you better. We'll be back shortly. Thank you for your patience!</p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:32px">Established 2017 · Mohini CSC Centre</p>
+        </div>
+      </div>
+    `;
+  };
+  document.head.appendChild(s);
 }
 
 // Event delegation for View Application buttons (XSS-safe)
@@ -1148,7 +1165,8 @@ fbOnAuthStateChanged(function(user) {
   if (window._authChecked) return;
   window._authChecked = true;
 
-  if (checkMaintenance()) {
+  checkMaintenance().then(function(inMaintenance) {
+    if (inMaintenance) return;
     if (checkLogin()) {
       loadServicesFromAdmin();
       loadApplications().then(function() {
@@ -1168,5 +1186,5 @@ fbOnAuthStateChanged(function(user) {
       });
       renderTickets();
     }
-  }
+  });
 });

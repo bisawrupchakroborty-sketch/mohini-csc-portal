@@ -300,7 +300,7 @@ function renderAdminApps() {
   const search = (document.getElementById('adminSearchApp')?.value || '').toLowerCase();
   const statusF = document.getElementById('adminFilterStatus')?.value || '';
   let filtered = adminApps.filter(a => {
-    const ms = !search || a.id.toLowerCase().includes(search) || a.customer.toLowerCase().includes(search) || a.partner.toLowerCase().includes(search);
+    const ms = !search || a.id.toLowerCase().includes(search) || a.customer.toLowerCase().includes(search) || (a.partner || '').toLowerCase().includes(search);
     const mf = !statusF || a.status === statusF;
     return ms && mf;
   });
@@ -984,9 +984,6 @@ async function renderPayments(data) {
 }
 
 function filterPayments(search, status) {
-  // Reload all payments fresh then filter
-  renderPayments();
-  // Reload from Firestore for filtering
   renderPayments();
 }
 
@@ -1209,8 +1206,8 @@ async function saveSettings(section) {
       partnerPrefix: document.getElementById('settPartnerPrefix').value || 'MCS-'
     };
     await fsSetDoc('settings', 'general', data);
+    toast(section + ' settings saved successfully!');
   }
-  toast(section + ' settings saved successfully!');
 }
 
 // ---- Theme ----
@@ -1544,6 +1541,7 @@ function renderEditSvcFileList() {
 
 function removeSvcFile(svcIdx, fileIdx) {
   adminServices[svcIdx].sampleFiles.splice(fileIdx, 1);
+  saveAdminServices();
   renderServices();
   toast('File removed.');
 }
