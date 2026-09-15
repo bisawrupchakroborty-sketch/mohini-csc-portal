@@ -111,6 +111,25 @@ function loadServicesFromAdmin() {
   // Partner status is already determined at login — don't re-query partnerIds
   var hasPartnerId = !!myPartnerId;
 
+  // If no partnerId in localStorage, try to re-detect from Firestore
+  var partnerDetectPromise;
+  if (!hasPartnerId && loginData.uid) {
+    partnerDetectPromise = fsQuery('partnerIds', 'usedBy', '==', loginData.uid).then(function(boughtIds) {
+      if (boughtIds && boughtIds.length > 0 && boughtIds[0].partnerId) {
+        myPartnerId = boughtIds[0].partnerId;
+        hasPartnerId = true;
+        loginData.partnerId = myPartnerId;
+        localStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
+        document.querySelectorAll('.sidebar-user small').forEach(function(el) { el.textContent = 'ID: ' + myPartnerId; });
+        document.querySelectorAll('.profile-pill small').forEach(function(el) { el.textContent = 'Partner ID: ' + myPartnerId; });
+      }
+      return true;
+    }).catch(function() { return true; });
+  } else {
+    partnerDetectPromise = Promise.resolve(true);
+  }
+
+  return partnerDetectPromise.then(function() {
   return fsGetCollection('services').then(function(adminSvc) {
     if (!adminSvc || adminSvc.length === 0) {
       // Firestore returned nothing — keep default services but apply partner pricing
@@ -128,21 +147,24 @@ function loadServicesFromAdmin() {
     // Rebuild services from Firestore
     services = {};
     (adminSvc || []).forEach(function(s) {
-      if (s.enabled && !s.maintenance) {
+      if (s.enabled === true && !s.maintenance) {
         var iconChar = s.name.charAt(0);
         var iconCls = 'other';
         if (s.name.includes('Aadhaar')) { iconChar = 'A'; iconCls = 'aadhaar'; }
         else if (s.name.includes('PAN')) { iconChar = 'P'; iconCls = 'pan'; }
         else if (s.name.includes('Ration')) { iconChar = 'R'; iconCls = 'ration'; }
         else if (s.name.includes('Bill')) { iconChar = '₹'; iconCls = 'bill'; }
-        var showPrice = s.paymentEnabled !== false ? (hasPartnerId ? s.partnerPrice : s.price) : 0;
-        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: s.price, partnerPrice: s.partnerPrice, hasPartnerId: hasPartnerId, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: s.price, partnerPrice: s.partnerPrice}], instructions: s.instructions || '' };
+        var partnerPrice = s.partnerPrice || 0;
+        var normalPrice = s.price || 0;
+        var showPrice = s.paymentEnabled !== false ? (hasPartnerId && partnerPrice > 0 ? partnerPrice : normalPrice) : 0;
+        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}], instructions: s.instructions || '' };
       }
     });
     renderServiceCards();
   }).catch(function(e) {
     console.error('Failed to load services from Firestore:', e);
     renderServiceCards();
+  });
   });
 }
 
@@ -162,8 +184,8 @@ function renderServiceCards() {
     var escName = escHtml(name);
     var escType = s.type ? ' <span style="display:inline-block;background:rgba(22,101,216,.08);color:var(--primary);font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;vertical-align:middle">' + escHtml(s.type) + '</span>' : '';
     var priceHtml = s.paymentEnabled !== false ? '₹' + s.price : '<span style="color:var(--success);font-weight:700">FREE</span>';
-    if (s.hasPartnerId && s.originalPrice && s.originalPrice > s.price) {
-      priceHtml = '<span style="text-decoration:line-through;color:var(--text-muted);font-size:11px">₹' + s.originalPrice + '</span> <span style="font-weight:700;color:var(--success)">₹' + s.price + '</span> <span style="background:rgba(34,197,94,.12);color:var(--success);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">PARTNER</span>';
+    if (s.hasPartnerId && s.originalPrice > 0 && s.partnerPrice > 0 && s.originalPrice > s.partnerPrice) {
+      priceHtml = '<span style="text-decoration:line-through;color:var(--text-muted);font-size:11px">₹' + s.originalPrice + '</span> <span style="font-weight:700;color:var(--success)">₹' + s.partnerPrice + '</span> <span style="background:rgba(34,197,94,.12);color:var(--success);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">PARTNER</span>';
     }
     return '<button class="service-card" onclick="openService(\'' + name.replace(/'/g, "\\'") + '\')"><div class="service-icon ' + s.iconClass + '">' + s.icon + '</div><div><b>' + escName + '</b>' + escType + '<small>' + desc + '</small><div class="price">' + priceHtml + '</div></div><span class="arrow">→</span></button>';
   }).join('');
@@ -376,11 +398,12 @@ function openService(service) {
 }
 
 function updateReqPriceDisplay(price, partnerPrice) {
-  var hasPartnerId = services[currentService] && services[currentService].hasPartnerId;
-  var showPrice = hasPartnerId ? partnerPrice : price;
+  var svcData = services[currentService];
+  var hasPartnerId = svcData && svcData.hasPartnerId;
+  var showPrice = hasPartnerId && partnerPrice > 0 ? partnerPrice : price;
   var el = document.getElementById('reqPriceDisplay');
   if (el) {
-    if (hasPartnerId && price > partnerPrice) {
+    if (hasPartnerId && price > 0 && partnerPrice > 0 && price > partnerPrice) {
       el.innerHTML = '<span style="text-decoration:line-through;color:var(--text-muted);font-size:12px">₹' + price + '</span> <span style="font-weight:700;color:var(--success)">₹' + partnerPrice + '</span> <span style="background:rgba(34,197,94,.12);color:var(--success);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">PARTNER</span>';
     } else {
       el.innerHTML = '<span style="font-weight:700;font-size:16px">₹' + showPrice + '</span>';
@@ -1155,7 +1178,9 @@ function checkMaintenance() {
       return true;
     }
     return false;
-  }).catch(function() { return false; });
+  }).catch(function() {
+    return false;
+  });
 }
 
 function showMaintenancePage() {

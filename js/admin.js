@@ -1305,22 +1305,30 @@ document.getElementById('settThemeText')?.addEventListener('input', function() {
 
 // ---- Site Status ----
 let maintenanceMode = false;
-// Load maintenance status from Firestore on init
-fsGetDoc('settings', 'maintenance').then(function(doc) {
-  if (doc && doc.enabled === true) { maintenanceMode = true; initMaintenanceUI(); }
-}).catch(function() {});
+let _maintenanceLoaded = false;
 function initMaintenanceUI() {
   const el = document.getElementById('maintenanceStatus');
   if (el) {
-    el.textContent = maintenanceMode ? 'ON' : 'OFF';
+    el.textContent = _maintenanceLoaded ? (maintenanceMode ? 'ON' : 'OFF') : 'Loading...';
     el.style.color = maintenanceMode ? 'var(--danger)' : 'var(--success)';
   }
 }
-function toggleMaintenanceMode() {
-  maintenanceMode = !maintenanceMode;
-  fsSetDoc('settings', 'maintenance', { enabled: maintenanceMode }).catch(function(){});
-  initMaintenanceUI();
-  toast(maintenanceMode ? '⚠ Maintenance mode ACTIVATED. Partner portal shows maintenance page.' : '✓ Maintenance mode DEACTIVATED. Portal is live.');
+async function toggleMaintenanceMode() {
+  if (!_maintenanceLoaded) { toast('⏳ Please wait, loading maintenance status...'); return; }
+  var newState = !maintenanceMode;
+  var btn = document.querySelector('[onclick="toggleMaintenanceMode()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Updating...'; }
+  try {
+    await fsSetDoc('settings', 'maintenance', { enabled: newState });
+    maintenanceMode = newState;
+    initMaintenanceUI();
+    toast(maintenanceMode ? '⚠ Maintenance mode ACTIVATED. Partner portal shows maintenance page.' : '✓ Maintenance mode DEACTIVATED. Portal is live.');
+  } catch(e) {
+    console.error('Failed to toggle maintenance:', e);
+    toast('❌ Failed to update maintenance mode. Check your connection.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔧 Toggle Maintenance Mode'; }
+  }
 }
 
 function simulateServerDown() {
@@ -1467,12 +1475,18 @@ function updateAdminStats() {
 
 // ---- Init ----
 function initAdmin() {
-  // Load persisted data — await all before rendering
+  var maintenancePromise = fsGetDoc('settings', 'maintenance').then(function(doc) {
+    if (doc && doc.enabled === true) { maintenanceMode = true; }
+    _maintenanceLoaded = true;
+  }).catch(function() { _maintenanceLoaded = true; });
+
   Promise.all([
     loadAdminApps(),
     loadPartners(),
-    loadAdminServices()
+    loadAdminServices(),
+    maintenancePromise
   ]).then(function() {
+    initMaintenanceUI();
     updateAdminStats();
     renderOverviewQueue();
     renderAdminApps();
@@ -1481,7 +1495,6 @@ function initAdmin() {
     renderPayments();
     renderDocRows();
     renderAdminTickets();
-    initMaintenanceUI();
   }).catch(function(e) {
     console.error('Admin init error:', e);
     updateAdminStats();
