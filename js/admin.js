@@ -42,23 +42,12 @@ async function loadAdminServices() {
         delete result._id;
         var def = defaultsByName[result.name];
         if (def) {
-          // Always ensure partnerPrice is correct
+          // Always use defaults for partnerPrice
           if (!result.partnerPrice || result.partnerPrice <= 0) result.partnerPrice = def.partnerPrice;
-          // Always ensure requestTypes are complete (use defaults as source of truth)
-          if (!result.requestTypes || result.requestTypes.length === 0) {
-            result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
-          }
-          // Ensure each requestType has partnerPrice
-          result.requestTypes = result.requestTypes.map(function(r) {
-            if (typeof r === 'string') return { name: r, price: def.price, partnerPrice: def.partnerPrice };
-            if (!r.partnerPrice || r.partnerPrice <= 0) {
-              var match = def.requestTypes.find(function(dr) { return dr.name === r.name; });
-              r.partnerPrice = match ? match.partnerPrice : def.partnerPrice;
-            }
-            return r;
-          });
-          // Ensure docs are complete
-          if (!result.docs || result.docs.length === 0) result.docs = def.docs.slice();
+          // Always use defaults requestTypes (admin panel is source of truth)
+          result.requestTypes = def.requestTypes.map(function(r) { return Object.assign({}, r); });
+          // Always use defaults docs
+          result.docs = def.docs.slice();
           // Ensure enabled is boolean
           if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
           if (result.enabled === undefined) result.enabled = def.enabled;
