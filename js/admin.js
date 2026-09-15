@@ -383,7 +383,7 @@ function adminReviewApp(id) {
         <span class="badge ${d.status === 'Verified' ? 'badge-completed' : d.status === 'Correction Needed' ? 'badge-rejected' : 'badge-pending'}" style="margin-left:6px;font-size:10px">${d.status}</span>
       </div>
       <div class="doc-actions">
-        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
+        ${(d.url || d.data) ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(a.id)}',${di})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
         ${d.status === 'Verified' ? `<button class="btn btn-sm" style="background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.2)" disabled>✓ Verified</button>` :
           d.status === 'Correction Needed' ? `<button class="btn btn-sm" style="background:rgba(239,68,68,.1);color:#dc2626;border:1px solid rgba(239,68,68,.2)" disabled>✗ Rejected</button>` :
           `<button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(a.id)}',${di})">Verify</button>`}
@@ -1055,18 +1055,33 @@ function renderDocRows() {
 
 function downloadDoc(appId, docIdx) {
   const a = adminApps.find(x => x.id === appId);
-  if (!a || !a.docs[docIdx] || !a.docs[docIdx].data) {
-    toast('No file data available for download.');
+  if (!a || !a.docs[docIdx]) {
+    toast('No file available for download.');
     return;
   }
   const doc = a.docs[docIdx];
-  const link = document.createElement('a');
-  link.href = doc.data;
-  link.download = doc.fileName || doc.name + '.file';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  toast('Downloading: ' + (doc.fileName || doc.name));
+  // Support Firebase Storage URL
+  if (doc.url) {
+    var link = document.createElement('a');
+    link.href = doc.url;
+    link.download = doc.fileName || doc.name + '.file';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Downloading: ' + (doc.fileName || doc.name));
+  } else if (doc.data) {
+    // Legacy base64 fallback
+    var link = document.createElement('a');
+    link.href = doc.data;
+    link.download = doc.fileName || doc.name + '.file';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Downloading: ' + (doc.fileName || doc.name));
+  } else {
+    toast('No file data available for download.');
+  }
 }
 
 function verifyDoc(appId, docIdx) {
