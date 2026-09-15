@@ -232,7 +232,17 @@ async function saveApplications() {
   console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
   if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
-    await fsSetDoc('partnerApps', uid, { apps: applications });
+    // Strip base64 file data from docs — too large for Firestore (1MB limit)
+    var cleanApps = applications.map(function(a) {
+      var clean = Object.assign({}, a);
+      if (clean.docs && clean.docs.length) {
+        clean.docs = clean.docs.map(function(d) {
+          return { name: d.name, fileName: d.fileName, type: d.type, size: d.size, status: d.status };
+        });
+      }
+      return clean;
+    });
+    await fsSetDoc('partnerApps', uid, { apps: cleanApps });
     console.log('[SAVE] SUCCESS - apps saved to Firestore for uid:', uid);
     return true;
   } catch(e) {

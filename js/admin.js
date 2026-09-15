@@ -1214,15 +1214,7 @@ var _editServiceModal = document.getElementById('editServiceModal'); if (_editSe
 // ---- Utility ----
 function esc(s) { return typeof escHtml === 'function' ? escHtml(s) : String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
 
-let toastTimer;
-function toast(msg) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-}
+// toast defined in admin.html inline script
 
 // ---- Settings Tabs ----
 function switchSettingsTab(tab, el) {
