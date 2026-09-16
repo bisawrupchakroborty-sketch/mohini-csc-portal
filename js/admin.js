@@ -8,11 +8,51 @@ let adminApps = [];
 let partners = [];
 
 let adminServices = [
-  { name:'Aadhaar Update', type:'Aadhaar', desc:'Update request & document collection', price:120, partnerPrice:100, enabled:true, maintenance:false, paymentEnabled:true, requestTypes:[{name:'Address Update',price:100,partnerPrice:80},{name:'Name Update',price:120,partnerPrice:100},{name:'Date of Birth Update',price:120,partnerPrice:100},{name:'Mobile / Email Update',price:80,partnerPrice:60},{name:'New Application',price:150,partnerPrice:120},{name:'Other Correction',price:120,partnerPrice:100}], docs:['Existing Aadhaar Copy','Proof of Identity / Address','Additional Supporting Document'], instructions:'Verify all documents carefully. Cross-check customer details with Aadhaar database.' },
-  { name:'PAN Services', type:'PAN', desc:'New / correction assistance', price:80, partnerPrice:65, enabled:true, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New PAN Card',price:100,partnerPrice:80},{name:'PAN Correction',price:80,partnerPrice:65},{name:'PAN Update',price:60,partnerPrice:45},{name:'Other',price:80,partnerPrice:65}], docs:['Proof of Identity','Photograph','Aadhaar Copy'], instructions:'Check PAN eligibility. Verify photo quality.' },
-  { name:'Ration Services', type:'Ration', desc:'Application assistance', price:70, partnerPrice:55, enabled:true, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New Ration Card',price:100,partnerPrice:80},{name:'Member Addition',price:60,partnerPrice:45},{name:'Member Removal',price:50,partnerPrice:40},{name:'Address Update',price:70,partnerPrice:55},{name:'Other',price:70,partnerPrice:55}], docs:['Ration Card Copy','Address Proof','Identity Proof'], instructions:'Verify family details and address.' },
-  { name:'Bill Payment', type:'Bill Payment', desc:'Electricity & utility requests', price:25, partnerPrice:20, enabled:true, maintenance:false, paymentEnabled:true, requestTypes:[{name:'Electricity Bill',price:25,partnerPrice:20},{name:'Water Bill',price:25,partnerPrice:20},{name:'Gas Bill',price:25,partnerPrice:20},{name:'Mobile Recharge',price:15,partnerPrice:10},{name:'DTH Recharge',price:15,partnerPrice:10},{name:'Other',price:25,partnerPrice:20}], docs:['Previous Bill Copy','Account Number Proof'], instructions:'Verify account number before processing.' },
-  { name:'Other CSC Service', type:'Other', desc:'Configure additional services later', price:100, partnerPrice:80, enabled:false, maintenance:false, paymentEnabled:true, requestTypes:[{name:'New Application',price:100,partnerPrice:80},{name:'Update',price:80,partnerPrice:60},{name:'Correction',price:80,partnerPrice:60},{name:'Other',price:100,partnerPrice:80}], docs:['Supporting Document 1','Supporting Document 2'], instructions:'Default template — configure per service.' },
+  { name:'Aadhaar Update', type:'Aadhaar', desc:'Update request & document collection', price:120, partnerPrice:100, enabled:true, maintenance:false, paymentEnabled:true,
+    requestTypes:[
+      {name:'Address Update',price:100,partnerPrice:80, docs:['Existing Aadhaar Copy','New Address Proof','Photo'], instructions:'Naya address proof mandatory hai — electricity bill, water bill ya bank statement.', fields:[{label:'New Address',required:true},{label:'Old Address',required:true}]},
+      {name:'Name Update',price:120,partnerPrice:100, docs:['Existing Aadhaar Copy','Gazette Certificate','Photo'], instructions:'Name mismatch ke liye gazette notification ya marriage certificate chahiye.', fields:[{label:'New Name',required:true},{label:'Old Name',required:true},{label:'Reason for Change',required:false}]},
+      {name:'Date of Birth Update',price:120,partnerPrice:100, docs:['Existing Aadhaar Copy','Birth Certificate','Photo'], instructions:'Birth certificate ya 10th marksheet lagana hai.', fields:[{label:'New Date of Birth',required:true},{label:'Old Date of Birth',required:true}]},
+      {name:'Mobile / Email Update',price:80,partnerPrice:60, docs:['Existing Aadhaar Copy','Photo'], instructions:'Mobile number verify karna hai.', fields:[{label:'New Mobile Number',required:true}]},
+      {name:'New Application',price:150,partnerPrice:120, docs:['Proof of Identity','Proof of Address','Photo'], instructions:'Naya Aadhaar banane ke liye identity aur address proof chahiye.', fields:[{label:'Full Name',required:true},{label:'Father / Guardian Name',required:false}]},
+      {name:'Other Correction',price:120,partnerPrice:100, docs:['Existing Aadhaar Copy','Supporting Document','Photo'], instructions:'Correction ke liye supporting document lagana hai.', fields:[{label:'Correction Details',required:true}]}
+    ],
+    docs:['Existing Aadhaar Copy','Proof of Identity / Address','Additional Supporting Document'], instructions:'Verify all documents carefully. Cross-check customer details with Aadhaar database.' },
+  { name:'PAN Services', type:'PAN', desc:'New / correction assistance', price:80, partnerPrice:65, enabled:true, maintenance:false, paymentEnabled:true,
+    requestTypes:[
+      {name:'New PAN Card',price:100,partnerPrice:80, docs:['Aadhaar Copy','Photo','Signature'], instructions:'Naya PAN banane ke liye Aadhaar mandatory hai.', fields:[{label:'Full Name',required:true},{label:'Date of Birth',required:true},{label:'Father Name',required:true}]},
+      {name:'PAN Correction',price:80,partnerPrice:65, docs:['Old PAN Copy','Aadhaar Copy','Supporting Document'], instructions:'Correction ke liye old PAN aur supporting document chahiye.', fields:[{label:'What to Correct',required:true},{label:'Correct Value',required:true}]},
+      {name:'PAN Update',price:60,partnerPrice:45, docs:['PAN Card Copy','Aadhaar Copy'], instructions:'Update ke liye PAN aur Aadhaar dono chahiye.', fields:[{label:'What to Update',required:true},{label:'New Value',required:true}]},
+      {name:'Other',price:80,partnerPrice:65, docs:['PAN Card Copy','Supporting Document'], instructions:'Other PAN services ke liye document verification hoga.', fields:[{label:'Details',required:true}]}
+    ],
+    docs:['Proof of Identity','Photograph','Aadhaar Copy'], instructions:'Check PAN eligibility. Verify photo quality.' },
+  { name:'Ration Services', type:'Ration', desc:'Application assistance', price:70, partnerPrice:55, enabled:true, maintenance:false, paymentEnabled:true,
+    requestTypes:[
+      {name:'New Ration Card',price:100,partnerPrice:80, docs:['Address Proof','Identity Proof','Income Certificate'], instructions:'Naya ration card ke liye income certificate zaroori hai.', fields:[{label:'Family Head Name',required:true},{label:'Family Members Count',required:true},{label:'Address',required:true}]},
+      {name:'Member Addition',price:60,partnerPrice:45, docs:['Ration Card Copy','New Member Aadhaar','Birth Certificate'], instructions:'Naye member ka Aadhaar aur birth certificate chahiye.', fields:[{label:'New Member Name',required:true},{label:'Relationship',required:true},{label:'Date of Birth',required:true}]},
+      {name:'Member Removal',price:50,partnerPrice:40, docs:['Ration Card Copy','Request Letter'], instructions:'Member removal ke liye request letter chahiye.', fields:[{label:'Member Name to Remove',required:true},{label:'Reason',required:false}]},
+      {name:'Address Update',price:70,partnerPrice:55, docs:['Ration Card Copy','New Address Proof'], instructions:'Naya address proof mandatory hai.', fields:[{label:'New Address',required:true},{label:'Old Address',required:true}]},
+      {name:'Other',price:70,partnerPrice:55, docs:['Ration Card Copy','Supporting Document'], instructions:'Other ration services ke liye document verification hoga.', fields:[{label:'Details',required:true}]}
+    ],
+    docs:['Ration Card Copy','Address Proof','Identity Proof'], instructions:'Verify family details and address.' },
+  { name:'Bill Payment', type:'Bill Payment', desc:'Electricity & utility requests', price:25, partnerPrice:20, enabled:true, maintenance:false, paymentEnabled:true,
+    requestTypes:[
+      {name:'Electricity Bill',price:25,partnerPrice:20, docs:['Previous Bill Copy'], instructions:'Bill number aur amount verify karna hai.', fields:[{label:'Consumer Number',required:true},{label:'Bill Amount',required:true}]},
+      {name:'Water Bill',price:25,partnerPrice:20, docs:['Previous Bill Copy'], instructions:'Water bill consumer number verify karna hai.', fields:[{label:'Consumer Number',required:true},{label:'Bill Amount',required:true}]},
+      {name:'Gas Bill',price:25,partnerPrice:20, docs:['Previous Bill Copy'], instructions:'Gas bill consumer number verify karna hai.', fields:[{label:'Consumer Number',required:true},{label:'Bill Amount',required:true}]},
+      {name:'Mobile Recharge',price:15,partnerPrice:10, docs:[], instructions:'Mobile number aur operator verify karna hai.', fields:[{label:'Mobile Number',required:true},{label:'Operator',required:true},{label:'Recharge Amount',required:true}]},
+      {name:'DTH Recharge',price:15,partnerPrice:10, docs:[], instructions:'DTH customer ID verify karna hai.', fields:[{label:'Customer ID',required:true},{label:'Recharge Amount',required:true}]},
+      {name:'Other',price:25,partnerPrice:20, docs:['Previous Bill Copy'], instructions:'Other bill payment ke liye bill copy chahiye.', fields:[{label:'Details',required:true},{label:'Bill Amount',required:true}]}
+    ],
+    docs:['Previous Bill Copy','Account Number Proof'], instructions:'Verify account number before processing.' },
+  { name:'Other CSC Service', type:'Other', desc:'Configure additional services later', price:100, partnerPrice:80, enabled:false, maintenance:false, paymentEnabled:true,
+    requestTypes:[
+      {name:'New Application',price:100,partnerPrice:80, docs:['Supporting Document 1'], instructions:'Configure instructions for this service.', fields:[{label:'Details',required:true}]},
+      {name:'Update',price:80,partnerPrice:60, docs:['Supporting Document 1'], instructions:'Configure instructions for this service.', fields:[{label:'Details',required:true}]},
+      {name:'Correction',price:80,partnerPrice:60, docs:['Supporting Document 1'], instructions:'Configure instructions for this service.', fields:[{label:'Details',required:true}]},
+      {name:'Other',price:100,partnerPrice:80, docs:['Supporting Document 1'], instructions:'Configure instructions for this service.', fields:[{label:'Details',required:true}]}
+    ],
+    docs:['Supporting Document 1','Supporting Document 2'], instructions:'Default template — configure per service.' },
 ];
 
 async function saveAdminServices() {
@@ -421,6 +461,7 @@ function adminReviewApp(id) {
       ${a.submittedTime ? `<div class="field"><label>Time</label><span>${esc(a.submittedTime)}</span></div>` : ''}
       <div class="field full"><label>Application Note</label><span>${a.note ? esc(a.note) : '—'}</span></div>
     </div>
+    ${(a.customFields && a.customFields.length > 0) ? '<div style="margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px"><b style="font-size:12px;color:#475569;display:block;margin-bottom:8px">Additional Details</b>' + a.customFields.map(function(f) { return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#64748b">' + esc(f.label) + '</span><b style="color:#1e293b">' + esc(f.value || '—') + '</b></div>'; }).join('') + '</div>' : ''}
     <div style="margin-top:16px"><b style="font-size:13px;color:var(--navy)">Uploaded Documents</b></div>
     <div class="doc-review-list">${docsHtml || '<p style="font-size:12px;color:var(--text-muted)">No documents uploaded.</p>'}</div>
     ${a.adminMsg ? `<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:var(--radius-sm);padding:12px;margin-top:12px"><b style="font-size:12px;color:#92400e;display:block">Admin Note:</b><p style="font-size:12px;color:#78350f">${esc(a.adminMsg)}</p></div>` : ''}
@@ -700,8 +741,8 @@ function editService(idx) {
   document.getElementById('editSvcPartnerPrice').value = s.partnerPrice;
   document.getElementById('editSvcDesc').value = s.desc;
   editReqTypes = (s.requestTypes || []).map(function(r) {
-    if (typeof r === 'string') return { name: r, price: s.price, partnerPrice: s.partnerPrice };
-    return { name: r.name, price: r.price || s.price, partnerPrice: r.partnerPrice || s.partnerPrice };
+    if (typeof r === 'string') return { name: r, price: s.price, partnerPrice: s.partnerPrice, docs: [], instructions: '', fields: [] };
+    return { name: r.name, price: r.price || s.price, partnerPrice: r.partnerPrice || s.partnerPrice, docs: r.docs || [], instructions: r.instructions || '', fields: r.fields || [] };
   });
   renderReqTypes('edit');
   document.getElementById('editSvcEnabled').checked = s.enabled;
@@ -802,7 +843,7 @@ function addReqType(mode) {
   var price = parseInt(priceEl.value) || 0;
   var partnerPrice = parseInt(partnerPriceEl.value) || 0;
   if (!name) { toast('Enter a type name'); return; }
-  arr.push({ name: name, price: price, partnerPrice: partnerPrice });
+  arr.push({ name: name, price: price, partnerPrice: partnerPrice, docs: [], instructions: '', fields: [] });
   nameEl.value = ''; priceEl.value = ''; partnerPriceEl.value = '';
   renderReqTypes(mode);
 }
@@ -813,17 +854,164 @@ function removeReqType(mode, idx) {
   renderReqTypes(mode);
 }
 
+var _activeReqTypeEdit = { mode: null, idx: null };
+
+function editReqTypeDetail(mode, idx) {
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[idx];
+  _activeReqTypeEdit = { mode: mode, idx: idx };
+  var panel = document.getElementById(mode === 'new' ? 'newReqTypeDetail' : 'editReqTypeDetail');
+  if (!panel) return;
+  var knownDocs = ['Existing Aadhaar Copy','Proof of Identity','Proof of Address','Photo','Signature','Birth Certificate','Address Proof','PAN Card Copy','Old PAN Copy','Aadhaar Copy','Ration Card Copy','Income Certificate','Previous Bill Copy','Account Number Proof','Supporting Document','Gazette Certificate','Marriage Certificate','Bank Passbook','Voter ID'];
+  var selectedDocs = r.docs || [];
+  panel.innerHTML = '<div style="margin-top:12px;padding:14px;background:#fff;border:1px solid #e2e8f0;border-radius:10px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+    '<b style="font-size:14px;color:#172033">' + escHtml(r.name) + '</b>' +
+    '<button onclick="closeReqTypeDetail(\'' + mode + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px">✕</button></div>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px">REQUIRED DOCUMENTS</label>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
+    knownDocs.map(function(d) {
+      return '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#1e293b;cursor:pointer;background:#f8fafc;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px"><input type="checkbox" class="reqtype-doc-cb" value="' + escHtml(d) + '"' + (selectedDocs.indexOf(d) !== -1 ? ' checked' : '') + ' onchange="updateReqTypeDocs(\'' + mode + '\')">' + escHtml(d) + '</label>';
+    }).join('') +
+    '</div>' +
+    '<div style="display:flex;gap:6px;margin-top:8px"><input type="text" id="reqTypeCustomDoc_' + mode + '" placeholder="Custom document name..." style="flex:1;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px">' +
+    '<button onclick="addCustomReqTypeDoc(\'' + mode + '\')" style="padding:6px 12px;background:#1665d8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ Add</button></div>' +
+    '<div id="reqTypeCustomDocList_' + mode + '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px"></div></div>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px">INSTRUCTIONS</label>' +
+    '<textarea id="reqTypeInstructions_' + mode + '" rows="3" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical" placeholder="Instructions for this request type...">' + escHtml(r.instructions || '') + '</textarea></div>' +
+    '<div><label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px">CUSTOM FIELDS (partner ko fill karna hoga)</label>' +
+    '<div id="reqTypeFieldsList_' + mode + '"></div>' +
+    '<div style="display:flex;gap:6px;margin-top:8px"><input type="text" id="reqTypeFieldLabel_' + mode + '" placeholder="Field label (e.g. New Address)" style="flex:1;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px">' +
+    '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#1e293b"><input type="checkbox" id="reqTypeFieldReq_' + mode + '" checked> Required</label>' +
+    '<button onclick="addCustomReqTypeField(\'' + mode + '\')" style="padding:6px 12px;background:#1665d8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ Add</button></div></div>' +
+    '<button onclick="saveReqTypeDetail(\'' + mode + '\')" style="width:100%;margin-top:12px;padding:10px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Save Details</button></div>';
+  renderReqTypeCustomDocs(mode);
+  renderReqTypeFields(mode);
+}
+
+function closeReqTypeDetail(mode) {
+  var panel = document.getElementById(mode === 'new' ? 'newReqTypeDetail' : 'editReqTypeDetail');
+  if (panel) panel.innerHTML = '';
+  _activeReqTypeEdit = { mode: null, idx: null };
+}
+
+function updateReqTypeDocs(mode) {
+  saveReqTypeDetailData(mode);
+}
+
+function addCustomReqTypeDoc(mode) {
+  var input = document.getElementById('reqTypeCustomDoc_' + mode);
+  if (!input) return;
+  var name = input.value.trim();
+  if (!name) return;
+  saveReqTypeDetailData(mode);
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  if (!r.docs) r.docs = [];
+  if (r.docs.indexOf(name) === -1) r.docs.push(name);
+  input.value = '';
+  renderReqTypeCustomDocs(mode);
+}
+
+function renderReqTypeCustomDocs(mode) {
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  var el = document.getElementById('reqTypeCustomDocList_' + mode);
+  if (!el || !r) return;
+  var knownDocs = ['Existing Aadhaar Copy','Proof of Identity','Proof of Address','Photo','Signature','Birth Certificate','Address Proof','PAN Card Copy','Old PAN Copy','Aadhaar Copy','Ration Card Copy','Income Certificate','Previous Bill Copy','Account Number Proof','Supporting Document','Gazette Certificate','Marriage Certificate','Bank Passbook','Voter ID'];
+  var customDocs = (r.docs || []).filter(function(d) { return knownDocs.indexOf(d) === -1; });
+  el.innerHTML = customDocs.map(function(d, i) {
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#dbeafe;color:#1e40af;border-radius:4px;font-size:11px">' + escHtml(d) + ' <button onclick="removeCustomReqTypeDoc(\'' + mode + '\',\'' + escHtml(d) + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px">✕</button></span>';
+  }).join('');
+}
+
+function removeCustomReqTypeDoc(mode, docName) {
+  saveReqTypeDetailData(mode);
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  r.docs = (r.docs || []).filter(function(d) { return d !== docName; });
+  renderReqTypeCustomDocs(mode);
+}
+
+function addCustomReqTypeField(mode) {
+  var labelEl = document.getElementById('reqTypeFieldLabel_' + mode);
+  var reqEl = document.getElementById('reqTypeFieldReq_' + mode);
+  if (!labelEl) return;
+  var label = labelEl.value.trim();
+  if (!label) return;
+  saveReqTypeDetailData(mode);
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  if (!r.fields) r.fields = [];
+  r.fields.push({ label: label, required: reqEl ? reqEl.checked : true });
+  labelEl.value = '';
+  renderReqTypeFields(mode);
+}
+
+function renderReqTypeFields(mode) {
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  var el = document.getElementById('reqTypeFieldsList_' + mode);
+  if (!el || !r) return;
+  var fields = r.fields || [];
+  el.innerHTML = fields.map(function(f, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:4px;font-size:12px">' +
+      '<span style="flex:1;color:#1e293b">' + escHtml(f.label) + '</span>' +
+      '<span style="color:' + (f.required ? '#dc2626' : '#64748b') + ';font-size:11px">' + (f.required ? 'Required' : 'Optional') + '</span>' +
+      '<button onclick="removeCustomReqTypeField(\'' + mode + '\',' + i + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px">✕</button></div>';
+  }).join('');
+}
+
+function removeCustomReqTypeField(mode, idx) {
+  saveReqTypeDetailData(mode);
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  r.fields.splice(idx, 1);
+  renderReqTypeFields(mode);
+}
+
+function saveReqTypeDetailData(mode) {
+  if (!_activeReqTypeEdit.mode || _activeReqTypeEdit.mode !== mode) return;
+  var arr = mode === 'new' ? newReqTypes : editReqTypes;
+  var r = arr[_activeReqTypeEdit.idx];
+  if (!r) return;
+  var docCbs = document.querySelectorAll('.reqtype-doc-cb:checked');
+  var knownDocs = ['Existing Aadhaar Copy','Proof of Identity','Proof of Address','Photo','Signature','Birth Certificate','Address Proof','PAN Card Copy','Old PAN Copy','Aadhaar Copy','Ration Card Copy','Income Certificate','Previous Bill Copy','Account Number Proof','Supporting Document','Gazette Certificate','Marriage Certificate','Bank Passbook','Voter ID'];
+  var checkedDocs = Array.from(docCbs).map(function(cb) { return cb.value; });
+  var customDocs = (r.docs || []).filter(function(d) { return knownDocs.indexOf(d) === -1; });
+  r.docs = checkedDocs.concat(customDocs);
+  var instrEl = document.getElementById('reqTypeInstructions_' + mode);
+  if (instrEl) r.instructions = instrEl.value;
+}
+
+function saveReqTypeDetail(mode) {
+  saveReqTypeDetailData(mode);
+  renderReqTypes(mode);
+  closeReqTypeDetail(mode);
+  toast('Request type details saved!');
+}
+
 function renderReqTypes(mode) {
   var arr = mode === 'new' ? newReqTypes : editReqTypes;
   var el = document.getElementById(mode === 'new' ? 'newSvcReqTypes' : 'editSvcReqTypes');
   if (!el) return;
   if (arr.length === 0) { el.innerHTML = ''; return; }
   el.innerHTML = arr.map(function(r, i) {
-    return '<div style="display:flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;margin-bottom:4px;font-size:12px;color:#172033">' +
-      '<b style="flex:1">' + r.name + '</b>' +
+    var docCount = (r.docs || []).length;
+    var fieldCount = (r.fields || []).length;
+    return '<div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#172033">' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+      '<b style="flex:1">' + escHtml(r.name) + '</b>' +
       '<span style="color:#64748b">₹' + r.price + '</span>' +
       '<span style="color:var(--primary)">P: ₹' + r.partnerPrice + '</span>' +
-      '<button onclick="removeReqType(\'' + mode + '\',' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;padding:0">✕</button></div>';
+      '<button onclick="editReqTypeDetail(\'' + mode + '\',' + i + ')" style="background:none;border:none;color:#1665d8;cursor:pointer;font-size:13px;padding:2px 6px" title="Edit details">✏️</button>' +
+      '<button onclick="removeReqType(\'' + mode + '\',' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;padding:0">✕</button></div>' +
+      (docCount > 0 || fieldCount > 0 ? '<div style="margin-top:4px;display:flex;gap:8px;font-size:10px;color:#64748b">' +
+        (docCount > 0 ? '<span>📄 ' + docCount + ' docs</span>' : '') +
+        (fieldCount > 0 ? '<span>📝 ' + fieldCount + ' fields</span>' : '') +
+        (r.instructions ? '<span>📋 Has instructions</span>' : '') +
+        '</div>' : '') +
+      '</div>';
   }).join('');
 }
 

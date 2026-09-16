@@ -417,11 +417,16 @@ function openService(service) {
   window._currentReqPartnerPrice = initPartnerPrice;
   updateReqPriceDisplay(initPrice, initPartnerPrice);
 
-  // Render document upload boxes dynamically per service
-  var svcDocs = (svcData && svcData.docs) ? svcData.docs : ['Photo', 'ID Proof'];
-  renderDocUploads(svcDocs);
+  // Render initial docs, instructions, and fields from first request type
+  var initReqObj = (typeof firstReq === 'object') ? firstReq : null;
+  var initDocs = (initReqObj && initReqObj.docs && initReqObj.docs.length > 0) ? initReqObj.docs : ((svcData && svcData.docs) ? svcData.docs : ['Photo', 'ID Proof']);
+  var initInstr = (initReqObj && initReqObj.instructions) ? initReqObj.instructions : ((svcData && svcData.instructions) ? svcData.instructions : '');
+  var initFields = (initReqObj && initReqObj.fields) ? initReqObj.fields : [];
+  renderDocUploads(initDocs);
+  renderReqInstructions(initInstr);
+  renderCustomFields(initFields);
 
-  // Listen for type change
+  // Listen for type change — update docs, instructions, fields
   reqSelect.onchange = function() {
     var selected = reqSelect.value;
     var match = reqTypes.find(function(r) { return (typeof r === 'string' ? r : r.name) === selected; });
@@ -429,11 +434,45 @@ function openService(service) {
       window._currentReqPrice = match.price;
       window._currentReqPartnerPrice = match.partnerPrice;
       updateReqPriceDisplay(match.price, match.partnerPrice);
+      var newDocs = (match.docs && match.docs.length > 0) ? match.docs : ((svcData && svcData.docs) ? svcData.docs : ['Photo', 'ID Proof']);
+      var newInstr = match.instructions || ((svcData && svcData.instructions) ? svcData.instructions : '');
+      var newFields = match.fields || [];
+      renderDocUploads(newDocs);
+      renderReqInstructions(newInstr);
+      renderCustomFields(newFields);
     }
   };
 
   document.getElementById('appOverlay').classList.add('open');
   updateSteps();
+}
+
+function renderReqInstructions(text) {
+  var el = document.getElementById('reqInstructions');
+  if (!el) return;
+  if (text) {
+    el.innerHTML = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#1e40af;line-height:1.5"><b style="display:block;margin-bottom:4px">📋 Instructions:</b>' + escHtml(text) + '</div>';
+    el.style.display = 'block';
+  } else {
+    el.innerHTML = '';
+    el.style.display = 'none';
+  }
+}
+
+function renderCustomFields(fields) {
+  var el = document.getElementById('customFieldsList');
+  if (!el) return;
+  if (!fields || fields.length === 0) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="margin-bottom:16px"><label style="display:block;font-size:13px;font-weight:600;color:#172033;margin-bottom:10px">Additional Details</label>' +
+    fields.map(function(f, i) {
+      return '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px">' + escHtml(f.label) + (f.required ? ' <span style="color:#dc2626">*</span>' : ' <span style="color:#94a3b8">(Optional)</span>') + '</label>' +
+        '<input type="text" id="customField_' + i + '" data-required="' + f.required + '" placeholder="Enter ' + escHtml(f.label).toLowerCase() + '..." style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;color:#1e293b;font-family:inherit"></div>';
+    }).join('') + '</div>';
 }
 
 function updateReqPriceDisplay(price, partnerPrice) {
@@ -526,6 +565,7 @@ function handleUpload(input, boxId) {
 function goStep(step) {
   if (step === 2 && !validCustomer()) return;
   if (step === 3 && !validDocs()) return;
+  if (step === 3 && !validateCustomFields()) return;
   if (step === 3) buildReview();
   if (step === 4) {
     const svc = services[currentService];
@@ -563,8 +603,17 @@ function buildReview() {
     const label = box.querySelector('.upload-info b').textContent;
     const fname = inp.files.length ? inp.files[0].name : 'Not uploaded';
     const isRequired = box.querySelector('.upload-info small').textContent.includes('Required');
-    docList += `<div class="review-row"><span>${label}${isRequired ? ' *' : ''}</span><b>${fname}</b></div>`;
+    docList += `<div class="review-row"><span>${escHtml(label)}${isRequired ? ' *' : ''}</span><b>${escHtml(fname)}</b></div>`;
   });
+  // Collect custom fields
+  var customFieldsHtml = '';
+  var customFieldsData = collectCustomFields();
+  if (customFieldsData.length > 0) {
+    customFieldsHtml = '<div style="border-top:1px solid var(--border);margin:12px 0;padding-top:12px"><b style="font-size:13px;color:var(--navy)">Additional Details</b></div>' +
+      customFieldsData.map(function(f) {
+        return '<div class="review-row"><span>' + escHtml(f.label) + '</span><b>' + escHtml(f.value || '—') + '</b></div>';
+      }).join('');
+  }
   document.getElementById('reviewBox').innerHTML = `
     <div class="review-row"><span>Service</span><b>${escHtml(currentService)}</b></div>
     <div class="review-row"><span>Customer</span><b>${escHtml(name)}</b></div>
@@ -573,9 +622,35 @@ function buildReview() {
     <div class="review-row"><span>Request Type</span><b>${escHtml(req)}</b></div>
     ${note ? `<div class="review-row"><span>Note</span><b>${escHtml(note)}</b></div>` : ''}
     <div class="review-row"><span>Processing Fee</span><b>${priceDisplay}</b></div>
+    ${customFieldsHtml}
     <div style="border-top:1px solid var(--border);margin:12px 0;padding-top:12px"><b style="font-size:13px;color:var(--navy)">Documents</b></div>
     ${docList}
   `;
+}
+
+function collectCustomFields() {
+  var fields = [];
+  document.querySelectorAll('#customFieldsList input[id^="customField_"]').forEach(function(inp) {
+    var label = inp.previousElementSibling ? inp.previousElementSibling.textContent.replace(' *', '').replace(' (Optional)', '') : '';
+    fields.push({ label: label, value: inp.value.trim(), required: inp.dataset.required === 'true' });
+  });
+  return fields;
+}
+
+function validateCustomFields() {
+  var valid = true;
+  document.querySelectorAll('#customFieldsList input[id^="customField_"]').forEach(function(inp) {
+    if (inp.dataset.required === 'true' && !inp.value.trim()) {
+      var label = inp.previousElementSibling ? inp.previousElementSibling.textContent.replace(' *', '').replace(' (Optional)', '') : 'this field';
+      toast('Please fill in: ' + label);
+      inp.style.borderColor = '#dc2626';
+      inp.focus();
+      valid = false;
+    } else {
+      inp.style.borderColor = '#e2e8f0';
+    }
+  });
+  return valid;
 }
 
 function togglePay() {
@@ -703,7 +778,8 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     orderId: paymentInfo ? paymentInfo.razorpay_order_id : '',
     partnerId: myPartnerId,
     partnerName: loginData.name || 'Partner',
-    ownerUid: loginData.uid || ''
+    ownerUid: loginData.uid || '',
+    customFields: collectCustomFields()
   };
   applications.unshift(newApp);
 
@@ -925,6 +1001,7 @@ function viewApp(id) {
       <div class="detail-field"><label>Document Status</label><span>${escHtml(a.docStatus)}</span></div>
       <div class="detail-field"><label>Application Note</label><span>${a.note ? escHtml(a.note) : '—'}</span></div>
     </div>
+    ${(a.customFields && a.customFields.length > 0) ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><b style="font-size:12px;color:var(--navy);display:block;margin-bottom:8px">Additional Details</b>' + a.customFields.map(function(f) { return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--text-muted)">' + escHtml(f.label) + '</span><b style="color:var(--text)">' + escHtml(f.value || '—') + '</b></div>'; }).join('') + '</div>' : ''}
     ${correctionHtml}
     ${resultHtml}
     <div class="status-timeline">
@@ -1000,7 +1077,15 @@ function openReupload(appId) {
   reuploadFiles = {};
 
   var svc = services[a.service];
-  var docs = svc ? svc.docs : (a.docs || []).map(function(d) { return d.name || d; });
+  // Resolve docs from request type, fallback to service docs
+  var reqTypes = svc ? (svc.requestTypes || []) : [];
+  var matchedReq = reqTypes.find(function(r) { return (typeof r === 'string' ? r : r.name) === a.request; });
+  var docs;
+  if (matchedReq && typeof matchedReq === 'object' && matchedReq.docs && matchedReq.docs.length > 0) {
+    docs = matchedReq.docs;
+  } else {
+    docs = svc ? svc.docs : (a.docs || []).map(function(d) { return d.name || d; });
+  }
 
   var html = docs.map(function(docName, i) {
     var existing = (a.docs || [])[i];
