@@ -162,9 +162,16 @@ function loadServicesFromAdmin() {
         var partnerPrice = s.partnerPrice || 0;
         var normalPrice = s.price || 0;
         var showPrice = s.paymentEnabled !== false ? (hasPartnerId && partnerPrice > 0 ? partnerPrice : normalPrice) : 0;
-        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}], instructions: s.instructions || '' };
+        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}], instructions: s.instructions || '', position: typeof s.position === 'number' ? s.position : 999 };
       }
     });
+    // Sort services by position
+    var sortedNames = Object.keys(services).sort(function(a, b) {
+      return (services[a].position || 999) - (services[b].position || 999);
+    });
+    var sorted = {};
+    sortedNames.forEach(function(name) { sorted[name] = services[name]; });
+    services = sorted;
     renderServiceCards();
   }).catch(function(e) {
     console.error('Failed to load services from Firestore:', e);
