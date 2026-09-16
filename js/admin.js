@@ -17,14 +17,14 @@ let adminServices = [
 
 async function saveAdminServices() {
   console.log('[SAVE-SVC] Saving', adminServices.length, 'services...');
-  var promises = adminServices.map(function(s) {
+  var promises = adminServices.map(function(s, idx) {
     var docId = s.name.replace(/[\/\.\#\[\]\$]/g, '_');
     var data = {
       name: s.name, type: s.type, price: s.price, partnerPrice: s.partnerPrice || 0,
       desc: s.desc, enabled: s.enabled, maintenance: s.maintenance || false,
       paymentEnabled: s.paymentEnabled !== false, requestTypes: s.requestTypes || [],
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
-      aadhaarRequired: s.aadhaarRequired || false
+      aadhaarRequired: s.aadhaarRequired || false, position: idx
     };
     console.log('[SAVE-SVC] Saving:', s.name, 'docId:', docId, 'reqTypes:', (s.requestTypes||[]).length);
     return fsSetDoc('services', docId, data).then(function() {
@@ -62,6 +62,11 @@ async function loadAdminServices() {
         }
         console.log('[LOAD-SVC]', result.name, 'reqTypes:', (result.requestTypes||[]).length, 'fromFirestore:', hadReqTypes);
         return result;
+      });
+      adminServices.sort(function(a, b) {
+        var pa = typeof a.position === 'number' ? a.position : 999;
+        var pb = typeof b.position === 'number' ? b.position : 999;
+        return pa - pb;
       });
     }
   } catch(e) {
@@ -663,17 +668,17 @@ function svcDragEnter(e) {
 function svcDragLeave(e) {
   e.currentTarget.classList.remove('drag-over');
 }
-function svcDrop(e) {
+async function svcDrop(e) {
   e.preventDefault();
   var toIdx = parseInt(e.currentTarget.dataset.idx);
   e.currentTarget.classList.remove('drag-over');
   if (svcDragIdx === null || svcDragIdx === toIdx) return;
   var item = adminServices.splice(svcDragIdx, 1)[0];
   adminServices.splice(toIdx, 0, item);
-  saveAdminServices();
   svcDragIdx = null;
   renderServices();
   toast('Service order updated!');
+  await saveAdminServices();
 }
 function svcDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
@@ -743,34 +748,34 @@ async function saveServiceEdit() {
   toast(s.name + ' updated successfully.');
 }
 
-function toggleService(idx) {
+async function toggleService(idx) {
   adminServices[idx].enabled = !adminServices[idx].enabled;
-  saveAdminServices();
   renderServices();
   toast(adminServices[idx].name + (adminServices[idx].enabled ? ' enabled.' : ' disabled.'));
+  await saveAdminServices();
 }
 
-function toggleMaintenance(idx) {
+async function toggleMaintenance(idx) {
   adminServices[idx].maintenance = !adminServices[idx].maintenance;
-  saveAdminServices();
   renderServices();
   toast(adminServices[idx].name + (adminServices[idx].maintenance ? ' — Maintenance ON' : ' — Maintenance OFF'));
+  await saveAdminServices();
 }
 
-function togglePayment(idx) {
+async function togglePayment(idx) {
   adminServices[idx].paymentEnabled = !adminServices[idx].paymentEnabled;
-  saveAdminServices();
   renderServices();
   toast(adminServices[idx].name + (adminServices[idx].paymentEnabled ? ' — Payment enabled' : ' — Payment disabled (FREE)'));
+  await saveAdminServices();
 }
 
-function deleteService(idx) {
+async function deleteService(idx) {
   var s = adminServices[idx];
   if (!confirm('Delete "' + s.name + '"?\n\nThis cannot be undone.')) return;
   adminServices.splice(idx, 1);
-  saveAdminServices();
   renderServices();
   toast(s.name + ' deleted.');
+  await saveAdminServices();
 }
 
 // ---- Add New Service ----
@@ -1664,9 +1669,9 @@ function renderEditSvcFileList() {
   }).join('');
 }
 
-function removeSvcFile(svcIdx, fileIdx) {
+async function removeSvcFile(svcIdx, fileIdx) {
   adminServices[svcIdx].sampleFiles.splice(fileIdx, 1);
-  saveAdminServices();
   renderServices();
   toast('File removed.');
+  await saveAdminServices();
 }
