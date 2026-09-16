@@ -897,21 +897,21 @@ function renderDownloads() {
     var files = a.resultFiles || (Array.isArray(a.result) ? a.result : []);
     var fileCount = files.length;
     return '<div style="background:var(--bg-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">' +
-      '<div onclick="toggleDownloadGroup(this)" style="display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
-            '<b style="font-size:14px;color:var(--navy)">' + escHtml(a.id) + '</b>' +
-            '<span style="font-size:12px;color:var(--text-muted)">' + escHtml(a.service) + '</span>' +
+      '<div onclick="toggleDownloadGroup(this)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="flex:1;min-width:0;overflow:hidden">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;min-width:0">' +
+            '<b style="font-size:13px;color:var(--navy);white-space:nowrap">' + escHtml(a.id) + '</b>' +
+            '<span style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(a.service) + '</span>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text-secondary)">' +
+          '<div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             '<span>👤 ' + escHtml(a.customer) + '</span>' +
             '<span>📅 ' + escHtml(a.updated) + '</span>' +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:12px">' +
-          '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600">' + fileCount + ' file' + (fileCount !== 1 ? 's' : '') + '</span>' +
-          '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();downloadResult(\'' + escAttr(a.id) + '\')">Download All</button>' +
-          '<span style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+          '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap">' + fileCount + ' file' + (fileCount !== 1 ? 's' : '') + '</span>' +
+          '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();downloadResult(\'' + escAttr(a.id) + '\')" style="white-space:nowrap">Download All</button>' +
+          '<span style="font-size:16px;color:var(--text-muted);transition:transform .2s;flex-shrink:0">▸</span>' +
         '</div>' +
       '</div>' +
       '<div class="download-group-body" style="display:none;padding:0 20px 16px;border-top:1px solid var(--border-light)">' +

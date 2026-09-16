@@ -1297,26 +1297,26 @@ function renderDocRows() {
     var statusBg = pendingCount > 0 ? '#fffbeb' : rejectedCount > 0 ? '#fef2f2' : '#f0fdf4';
     var statusText = pendingCount > 0 ? 'Pending Review' : rejectedCount > 0 ? 'Correction Needed' : 'All Verified';
     return '<div style="background:var(--bg-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">' +
-      '<div onclick="toggleDocGroup(this)" style="display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
-            '<b style="font-size:14px;color:var(--navy)">' + esc(g.appId) + '</b>' +
-            '<span style="font-size:12px;color:var(--text-muted)">' + esc(g.service) + (g.request ? ' → ' + esc(g.request) : '') + '</span>' +
+      '<div onclick="toggleDocGroup(this)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="flex:1;min-width:0;overflow:hidden">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;min-width:0">' +
+            '<b style="font-size:13px;color:var(--navy);white-space:nowrap">' + esc(g.appId) + '</b>' +
+            '<span style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(g.service) + (g.request ? ' → ' + esc(g.request) : '') + '</span>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text-secondary)">' +
+          '<div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             '<span>👤 ' + esc(g.customer) + '</span>' +
             '<span>🤝 ' + esc(g.partnerName) + ' <span style="color:var(--text-muted)">(' + esc(g.partner) + ')</span></span>' +
             '<span>📅 ' + esc(g.date) + (g.submittedTime ? ' ⏰ ' + esc(g.submittedTime) : '') + '</span>' +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:12px">' +
-          '<div style="display:flex;gap:6px;font-size:11px">' +
-            '<span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:4px;font-weight:600">' + g.docs.length + ' docs</span>' +
-            (pendingCount > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:4px;font-weight:600">' + pendingCount + ' pending</span>' : '') +
-            (verifiedCount > 0 ? '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-weight:600">' + verifiedCount + ' verified</span>' : '') +
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+          '<div style="display:flex;gap:4px;font-size:11px">' +
+            '<span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap">' + g.docs.length + ' docs</span>' +
+            (pendingCount > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap">' + pendingCount + ' pending</span>' : '') +
+            (verifiedCount > 0 ? '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap">' + verifiedCount + ' verified</span>' : '') +
           '</div>' +
-          '<span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:' + statusBg + ';color:' + statusColor + '">' + statusText + '</span>' +
-          '<span style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>' +
+          '<span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:' + statusBg + ';color:' + statusColor + ';white-space:nowrap">' + statusText + '</span>' +
+          '<span style="font-size:16px;color:var(--text-muted);transition:transform .2s;flex-shrink:0">▸</span>' +
         '</div>' +
       '</div>' +
       '<div class="doc-group-body" style="display:none;padding:0 20px 16px;border-top:1px solid var(--border-light)">' +
