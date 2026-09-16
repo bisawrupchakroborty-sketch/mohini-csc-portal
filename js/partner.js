@@ -167,7 +167,9 @@ function loadServicesFromAdmin() {
     });
     // Sort services by position
     var sortedNames = Object.keys(services).sort(function(a, b) {
-      return (services[a].position || 999) - (services[b].position || 999);
+      var pa = typeof services[a].position === 'number' ? services[a].position : 999;
+      var pb = typeof services[b].position === 'number' ? services[b].position : 999;
+      return pa - pb;
     });
     var sorted = {};
     sortedNames.forEach(function(name) { sorted[name] = services[name]; });
