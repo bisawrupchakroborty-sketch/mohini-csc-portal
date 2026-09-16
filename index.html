@@ -198,12 +198,10 @@
             <h1>Downloads</h1>
             <p>Completed results shared by Mohini CSC Centre.</p>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Result File</th><th>Completed</th><th>Action</th></tr></thead>
-              <tbody id="downloadsRows"></tbody>
-            </table>
+          <div class="filters">
+            <input id="searchDownloads" placeholder="Search by application, customer, service…" oninput="filterDownloads()">
           </div>
+          <div id="downloadGroups"></div>
         </div>
 
         <!-- ========== SUPPORT ========== -->

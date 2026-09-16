@@ -873,23 +873,97 @@ function renderRecent() {
 
 // ---- Render Downloads ----
 function renderDownloads() {
-  const completed = applications.filter(a => a.status === 'Completed' && (a.result || a.resultFiles));
-  const rows = document.getElementById('downloadsRows');
-  if (!rows) return;
+  var search = (document.getElementById('searchDownloads')?.value || '').toLowerCase();
+  var completed = applications.filter(function(a) {
+    if (a.status !== 'Completed') return false;
+    if (!a.result || a.result.length === 0) return false;
+    if (search) {
+      var matchApp = (a.id || '').toLowerCase().indexOf(search) !== -1;
+      var matchCustomer = (a.customer || '').toLowerCase().indexOf(search) !== -1;
+      var matchService = (a.service || '').toLowerCase().indexOf(search) !== -1;
+      if (!matchApp && !matchCustomer && !matchService) return false;
+    }
+    return true;
+  });
+  var el = document.getElementById('downloadGroups');
+  if (!el) return;
   if (completed.length === 0) {
-    rows.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">No completed applications with results yet.</td></tr>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:12px">📂</div><p>No completed applications with results yet.</p></div>';
     return;
   }
-  rows.innerHTML = completed.map(a => `
-    <tr>
-      <td><b>${escHtml(a.id)}</b></td>
-      <td>${escHtml(a.customer)}</td>
-      <td>${escHtml(a.service)}</td>
-      <td>${escHtml(Array.isArray(a.result) ? a.result.join(', ') : a.result)}</td>
-      <td>${escHtml(a.updated)}</td>
-      <td><button class="btn btn-sm btn-primary" onclick="downloadResult('${escAttr(a.id)}')">Download</button></td>
-    </tr>
-  `).join('');
+  // Sort by date descending
+  completed.sort(function(a, b) { return new Date(b.updated) - new Date(a.updated); });
+  el.innerHTML = completed.map(function(a) {
+    var files = a.resultFiles || (Array.isArray(a.result) ? a.result : []);
+    var fileCount = files.length;
+    return '<div style="background:var(--bg-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">' +
+      '<div onclick="toggleDownloadGroup(this)" style="display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
+            '<b style="font-size:14px;color:var(--navy)">' + escHtml(a.id) + '</b>' +
+            '<span style="font-size:12px;color:var(--text-muted)">' + escHtml(a.service) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text-secondary)">' +
+            '<span>👤 ' + escHtml(a.customer) + '</span>' +
+            '<span>📅 ' + escHtml(a.updated) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600">' + fileCount + ' file' + (fileCount !== 1 ? 's' : '') + '</span>' +
+          '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();downloadResult(\'' + escAttr(a.id) + '\')">Download All</button>' +
+          '<span style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="download-group-body" style="display:none;padding:0 20px 16px;border-top:1px solid var(--border-light)">' +
+        files.map(function(f, fi) {
+          return '<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light)">' +
+            '<div style="font-size:24px">📄</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<b style="font-size:13px;color:var(--navy)">' + escHtml(f.name || 'Result File ' + (fi + 1)) + '</b>' +
+              '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (f.size ? Math.round(f.size / 1024) + 'KB' : '') + (f.type ? ' · ' + f.type : '') + '</div>' +
+            '</div>' +
+            '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();downloadSingleFile(\'' + escAttr(a.id) + '\',' + fi + ')">Download</button>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleDownloadGroup(headerEl) {
+  var card = headerEl.parentElement;
+  var body = card.querySelector('.download-group-body');
+  var arrow = headerEl.querySelector('span:last-child');
+  if (!body) return;
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    if (arrow) arrow.style.transform = 'rotate(90deg)';
+  } else {
+    body.style.display = 'none';
+    if (arrow) arrow.style.transform = '';
+  }
+}
+
+function filterDownloads() {
+  renderDownloads();
+}
+
+function downloadSingleFile(appId, fileIdx) {
+  var a = applications.find(function(x) { return x.id === appId; });
+  if (!a) return;
+  var files = a.resultFiles || (Array.isArray(a.result) ? a.result : []);
+  var f = files[fileIdx];
+  if (!f || !f.data) {
+    toast('File not found.');
+    return;
+  }
+  var link = document.createElement('a');
+  link.href = f.data;
+  link.download = f.name || 'result_' + (fileIdx + 1);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  toast('Downloaded: ' + (f.name || 'result_' + (fileIdx + 1)));
 }
 
 // ---- Render Wallet Transactions ----
