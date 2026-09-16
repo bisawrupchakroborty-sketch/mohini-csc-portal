@@ -1248,34 +1248,112 @@ function filterPayments() {
 
 // ---- Documents ----
 function renderDocRows() {
-  const docs = [];
-  adminApps.forEach(a => {
-    (a.docs || []).forEach((d, docIdx) => {
-      docs.push({ ...d, appId: a.id, customer: a.customer, partner: a.partner, partnerName: a.partnerName || a.partner, date: a.submitted, docIdx: docIdx });
-    });
+  var filterSearch = (window._docFilterSearch || '').toLowerCase();
+  var filterStatus = window._docFilterStatus || '';
+  // Group documents by application
+  var groups = {};
+  adminApps.forEach(function(a) {
+    if (!a.docs || a.docs.length === 0) return;
+    // Filter: check if any doc matches search/status
+    var filteredDocs = a.docs;
+    if (filterStatus) {
+      filteredDocs = filteredDocs.filter(function(d) { return d.status === filterStatus; });
+    }
+    if (filteredDocs.length === 0) return;
+    if (filterSearch) {
+      var matchApp = (a.id || '').toLowerCase().indexOf(filterSearch) !== -1;
+      var matchCustomer = (a.customer || '').toLowerCase().indexOf(filterSearch) !== -1;
+      var matchPartner = (a.partnerName || '').toLowerCase().indexOf(filterSearch) !== -1 || (a.partner || '').toLowerCase().indexOf(filterSearch) !== -1;
+      var matchService = (a.service || '').toLowerCase().indexOf(filterSearch) !== -1;
+      var matchDoc = filteredDocs.some(function(d) { return (d.name || '').toLowerCase().indexOf(filterSearch) !== -1 || (d.fileName || '').toLowerCase().indexOf(filterSearch) !== -1; });
+      if (!matchApp && !matchCustomer && !matchPartner && !matchService && !matchDoc) return;
+    }
+    groups[a.id] = {
+      appId: a.id,
+      customer: a.customer,
+      partner: a.partner,
+      partnerName: a.partnerName || a.partner,
+      service: a.service,
+      request: a.request,
+      date: a.submitted,
+      submittedTime: a.submittedTime || '',
+      docs: filteredDocs
+    };
   });
-  const el = document.getElementById('docRows');
+  var el = document.getElementById('docGroups');
   if (!el) return;
-  if (docs.length === 0) {
-    el.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No documents uploaded yet</td></tr>';
+  var groupArr = Object.values(groups);
+  if (groupArr.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:12px">📄</div><p>No documents uploaded yet</p></div>';
     return;
   }
-  el.innerHTML = docs.map((d, i) => `
-    <tr>
-      <td><b>${esc(d.fileName || d.name)}</b></td>
-      <td>${d.appId}</td>
-      <td>${esc(d.customer)}</td>
-      <td>${esc(d.partnerName)} <small style="color:var(--text-muted)">(${d.partner})</small></td>
-      <td>${d.name}</td>
-      <td>${d.date}</td>
-      <td><span class="badge badge-${d.status==='Verified'?'completed':d.status.includes('Correction')||d.status.includes('Reject')?'correction':'pending'}">${d.status}</span></td>
-      <td>
-        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
-        <button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(d.appId)}',${d.docIdx})">Verify</button>
-        <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc('${escAttr(d.appId)}',${d.docIdx})">Reject</button>
-      </td>
-    </tr>
-  `).join('');
+  // Sort by date descending
+  groupArr.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+  el.innerHTML = groupArr.map(function(g) {
+    var pendingCount = g.docs.filter(function(d) { return d.status === 'Pending Review'; }).length;
+    var verifiedCount = g.docs.filter(function(d) { return d.status === 'Verified'; }).length;
+    var rejectedCount = g.docs.filter(function(d) { return d.status && d.status.includes('Correction'); }).length;
+    var statusColor = pendingCount > 0 ? '#d97706' : rejectedCount > 0 ? '#dc2626' : '#16a34a';
+    var statusBg = pendingCount > 0 ? '#fffbeb' : rejectedCount > 0 ? '#fef2f2' : '#f0fdf4';
+    var statusText = pendingCount > 0 ? 'Pending Review' : rejectedCount > 0 ? 'Correction Needed' : 'All Verified';
+    return '<div style="background:var(--bg-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">' +
+      '<div onclick="toggleDocGroup(this)" style="display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
+            '<b style="font-size:14px;color:var(--navy)">' + esc(g.appId) + '</b>' +
+            '<span style="font-size:12px;color:var(--text-muted)">' + esc(g.service) + (g.request ? ' → ' + esc(g.request) : '') + '</span>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text-secondary)">' +
+            '<span>👤 ' + esc(g.customer) + '</span>' +
+            '<span>🤝 ' + esc(g.partnerName) + ' <span style="color:var(--text-muted)">(' + esc(g.partner) + ')</span></span>' +
+            '<span>📅 ' + esc(g.date) + (g.submittedTime ? ' ⏰ ' + esc(g.submittedTime) : '') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<div style="display:flex;gap:6px;font-size:11px">' +
+            '<span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:4px;font-weight:600">' + g.docs.length + ' docs</span>' +
+            (pendingCount > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:4px;font-weight:600">' + pendingCount + ' pending</span>' : '') +
+            (verifiedCount > 0 ? '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:4px;font-weight:600">' + verifiedCount + ' verified</span>' : '') +
+          '</div>' +
+          '<span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:' + statusBg + ';color:' + statusColor + '">' + statusText + '</span>' +
+          '<span style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="doc-group-body" style="display:none;padding:0 20px 16px;border-top:1px solid var(--border-light)">' +
+        g.docs.map(function(d, di) {
+          var docStatusColor = d.status === 'Verified' ? '#16a34a' : d.status && d.status.includes('Correction') ? '#dc2626' : '#d97706';
+          var docStatusBg = d.status === 'Verified' ? '#f0fdf4' : d.status && d.status.includes('Correction') ? '#fef2f2' : '#fffbeb';
+          return '<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light)">' +
+            '<div style="font-size:24px">📄</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<b style="font-size:13px;color:var(--navy)">' + esc(d.fileName || d.name) + '</b>' +
+              '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + esc(d.name) + ' · ' + (d.size ? Math.round(d.size/1024) + 'KB' : 'N/A') + ' · ' + (d.type || 'file') + '</div>' +
+            '</div>' +
+            '<span style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;background:' + docStatusBg + ';color:' + docStatusColor + '">' + esc(d.status || 'Pending') + '</span>' +
+            '<div style="display:flex;gap:6px">' +
+              (d.data ? '<button class="btn btn-sm btn-primary" onclick="downloadDoc(\'' + escAttr(g.appId) + '\',' + di + ')">Download</button>' : '<button class="btn btn-sm btn-secondary" disabled>No File</button>') +
+              '<button class="btn btn-sm btn-ghost" onclick="verifyDoc(\'' + escAttr(g.appId) + '\',' + di + ')">Verify</button>' +
+              '<button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc(\'' + escAttr(g.appId) + '\',' + di + ')">Reject</button>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleDocGroup(headerEl) {
+  var card = headerEl.parentElement;
+  var body = card.querySelector('.doc-group-body');
+  var arrow = headerEl.querySelector('span:last-child');
+  if (!body) return;
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    if (arrow) arrow.style.transform = 'rotate(90deg)';
+  } else {
+    body.style.display = 'none';
+    if (arrow) arrow.style.transform = '';
+  }
 }
 
 function downloadDoc(appId, docIdx) {
@@ -1408,37 +1486,10 @@ function submitUploadResult() {
 }
 
 function filterDocs(search, status) {
-  const docs = [];
-  adminApps.forEach(a => {
-    (a.docs || []).forEach((d, docIdx) => {
-      docs.push({ ...d, appId: a.id, customer: a.customer, partner: a.partner, partnerName: a.partnerName || a.partner, date: a.submitted, docIdx: docIdx });
-    });
-  });
-  let filtered = docs;
-  if (search) filtered = filtered.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.appId.toLowerCase().includes(search.toLowerCase()) || (d.customer && d.customer.toLowerCase().includes(search.toLowerCase())));
-  if (status) filtered = filtered.filter(d => d.status === status);
-  const el = document.getElementById('docRows');
-  if (!el) return;
-  if (filtered.length === 0) {
-    el.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No documents found</td></tr>';
-    return;
-  }
-  el.innerHTML = filtered.map((d, i) => `
-    <tr>
-      <td><b>${esc(d.fileName || d.name)}</b></td>
-      <td>${d.appId}</td>
-      <td>${esc(d.customer)}</td>
-      <td>${esc(d.partnerName)} <small style="color:var(--text-muted)">(${d.partner})</small></td>
-      <td>${d.name}</td>
-      <td>${d.date}</td>
-      <td><span class="badge badge-${d.status==='Verified'?'completed':d.status.includes('Correction')||d.status.includes('Reject')?'correction':'pending'}">${d.status}</span></td>
-      <td>
-        ${d.data ? `<button class="btn btn-sm btn-primary" onclick="downloadDoc('${escAttr(d.appId)}',${d.docIdx})">Download</button>` : `<button class="btn btn-sm btn-secondary" disabled>No File</button>`}
-        <button class="btn btn-sm btn-ghost" onclick="verifyDoc('${escAttr(d.appId)}',${d.docIdx})">Verify</button>
-        <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="rejectDoc('${escAttr(d.appId)}',${d.docIdx})">Reject</button>
-      </td>
-    </tr>
-  `).join('');
+  // Temporarily store search/status for renderDocRows
+  window._docFilterSearch = search || '';
+  window._docFilterStatus = status || '';
+  renderDocRows();
 }
 
 // ---- Modal Close ----
