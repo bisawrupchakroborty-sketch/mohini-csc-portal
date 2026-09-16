@@ -679,6 +679,7 @@ async function svcDrop(e) {
   renderServices();
   await saveAdminServices();
   toast('Service order updated!');
+  await saveAdminServices();
 }
 function svcDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
@@ -753,6 +754,7 @@ async function toggleService(idx) {
   renderServices();
   await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].enabled ? ' enabled.' : ' disabled.'));
+  await saveAdminServices();
 }
 
 async function toggleMaintenance(idx) {
@@ -760,6 +762,7 @@ async function toggleMaintenance(idx) {
   renderServices();
   await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].maintenance ? ' — Maintenance ON' : ' — Maintenance OFF'));
+  await saveAdminServices();
 }
 
 async function togglePayment(idx) {
@@ -767,6 +770,7 @@ async function togglePayment(idx) {
   renderServices();
   await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].paymentEnabled ? ' — Payment enabled' : ' — Payment disabled (FREE)'));
+  await saveAdminServices();
 }
 
 async function deleteService(idx) {
@@ -776,6 +780,7 @@ async function deleteService(idx) {
   renderServices();
   await saveAdminServices();
   toast(s.name + ' deleted.');
+  await saveAdminServices();
 }
 
 // ---- Add New Service ----
@@ -1674,4 +1679,5 @@ async function removeSvcFile(svcIdx, fileIdx) {
   renderServices();
   await saveAdminServices();
   toast('File removed.');
+  await saveAdminServices();
 }
