@@ -162,7 +162,12 @@ function loadServicesFromAdmin() {
         var partnerPrice = s.partnerPrice || 0;
         var normalPrice = s.price || 0;
         var showPrice = s.paymentEnabled !== false ? (hasPartnerId && partnerPrice > 0 ? partnerPrice : normalPrice) : 0;
-        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}], instructions: s.instructions || '', position: typeof s.position === 'number' ? s.position : 999 };
+        // Ensure each request type has docs, instructions, fields
+        var reqTypes = (s.requestTypes || [{name:'New Application', price: normalPrice, partnerPrice: partnerPrice}]).map(function(r) {
+          if (typeof r === 'string') return { name: r, price: normalPrice, partnerPrice: partnerPrice, docs: s.docs || [], instructions: s.instructions || '', fields: [] };
+          return { name: r.name, price: r.price || normalPrice, partnerPrice: r.partnerPrice || partnerPrice, docs: r.docs || s.docs || [], instructions: r.instructions || s.instructions || '', fields: r.fields || [] };
+        });
+        services[s.name] = { type: s.type || '', price: showPrice, originalPrice: normalPrice, partnerPrice: partnerPrice, hasPartnerId: hasPartnerId && partnerPrice > 0, icon: iconChar, iconClass: iconCls, docs: s.docs || ['Photo', 'ID Proof'], paymentEnabled: s.paymentEnabled !== false, maintenance: s.maintenance || false, requestTypes: reqTypes, instructions: s.instructions || '', position: typeof s.position === 'number' ? s.position : 999 };
       }
     });
     // Sort services by position

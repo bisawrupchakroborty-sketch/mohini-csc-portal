@@ -857,6 +857,10 @@ function removeReqType(mode, idx) {
 var _activeReqTypeEdit = { mode: null, idx: null };
 
 function editReqTypeDetail(mode, idx) {
+  // Save previous request type data before switching
+  if (_activeReqTypeEdit.mode === mode && _activeReqTypeEdit.idx !== null && _activeReqTypeEdit.idx !== idx) {
+    saveReqTypeDetailData(mode);
+  }
   var arr = mode === 'new' ? newReqTypes : editReqTypes;
   var r = arr[idx];
   _activeReqTypeEdit = { mode: mode, idx: idx };
