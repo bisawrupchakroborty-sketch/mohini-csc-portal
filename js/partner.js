@@ -1482,14 +1482,27 @@ document.addEventListener('click', function(e) {
 
 // Wait for Firebase Auth to initialize, then check login
 fbOnAuthStateChanged(function(user) {
-  // Remove the listener after first call
-  if (window._authChecked) return;
-  window._authChecked = true;
+  // Firebase fires null on initial load before restoring session from IndexedDB.
+  // Wait for the real auth state (second call or non-null user).
+  if (!user && !window._authReady) {
+    window._authReady = true;
+    // First call with null — Firebase hasn't restored session yet.
+    // Set a timeout: if no second call comes in 3s, user is genuinely not logged in.
+    setTimeout(function() {
+      if (!window._authHandled) {
+        window._authHandled = true;
+        window.location.href = 'login.html';
+      }
+    }, 3000);
+    return;
+  }
+
+  if (window._authHandled) return;
+  window._authHandled = true;
 
   checkMaintenance().then(function(inMaintenance) {
     if (inMaintenance) return;
     if (checkLogin()) {
-      // Run all data loads in parallel
       Promise.all([
         loadServicesFromAdmin(),
         loadApplications(),
@@ -1508,6 +1521,26 @@ fbOnAuthStateChanged(function(user) {
         renderApplications();
         renderDownloads();
         renderWalletTxns();
+        hideLoader();
+      });
+    } else {
+      hideLoader();
+    }
+  }).catch(function() {
+    if (checkLogin()) {
+      Promise.all([
+        loadServicesFromAdmin(),
+        loadApplications(),
+        loadWalletState(),
+        renderTickets()
+      ]).then(function() {
+        updateDashboardStats();
+        renderRecent();
+        renderApplications();
+        renderDownloads();
+        renderWalletTxns();
+        hideLoader();
+      }).catch(function() {
         hideLoader();
       });
     } else {
