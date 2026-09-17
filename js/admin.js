@@ -718,7 +718,6 @@ async function svcDrop(e) {
   adminServices.splice(toIdx, 0, item);
   svcDragIdx = null;
   renderServices();
-  await saveAdminServices();
   toast('Service order updated!');
   await saveAdminServices();
 }
@@ -793,7 +792,6 @@ async function saveServiceEdit() {
 async function toggleService(idx) {
   adminServices[idx].enabled = !adminServices[idx].enabled;
   renderServices();
-  await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].enabled ? ' enabled.' : ' disabled.'));
   await saveAdminServices();
 }
@@ -801,7 +799,6 @@ async function toggleService(idx) {
 async function toggleMaintenance(idx) {
   adminServices[idx].maintenance = !adminServices[idx].maintenance;
   renderServices();
-  await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].maintenance ? ' — Maintenance ON' : ' — Maintenance OFF'));
   await saveAdminServices();
 }
@@ -809,7 +806,6 @@ async function toggleMaintenance(idx) {
 async function togglePayment(idx) {
   adminServices[idx].paymentEnabled = !adminServices[idx].paymentEnabled;
   renderServices();
-  await saveAdminServices();
   toast(adminServices[idx].name + (adminServices[idx].paymentEnabled ? ' — Payment enabled' : ' — Payment disabled (FREE)'));
   await saveAdminServices();
 }
@@ -819,7 +815,6 @@ async function deleteService(idx) {
   if (!confirm('Delete "' + s.name + '"?\n\nThis cannot be undone.')) return;
   adminServices.splice(idx, 1);
   renderServices();
-  await saveAdminServices();
   toast(s.name + ' deleted.');
   await saveAdminServices();
 }
@@ -1364,7 +1359,6 @@ function downloadDoc(appId, docIdx) {
   }
   const doc = a.docs[docIdx];
 
-  // Try base64 data
   if (doc.data) {
     var link = document.createElement('a');
     link.href = doc.data;
@@ -1373,18 +1367,6 @@ function downloadDoc(appId, docIdx) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast('Downloading: ' + (doc.fileName || doc.name));
-    return;
-  }
-
-  // Fallback to base64 data (legacy)
-  if (doc.data) {
-    var link2 = document.createElement('a');
-    link2.href = doc.data;
-    link2.download = doc.fileName || doc.name + '.file';
-    document.body.appendChild(link2);
-    link2.click();
-    document.body.removeChild(link2);
     toast('Downloading: ' + (doc.fileName || doc.name));
     return;
   }
@@ -1668,16 +1650,23 @@ async function changeAdminPassword() {
   errEl.style.display = 'none';
   okEl.style.display = 'none';
 
-  const stored = localStorage.getItem('mohini_admin_pass');
-
   if (!current) {
     errEl.textContent = 'Please enter current password';
     errEl.style.display = 'block';
     return;
   }
 
+  // Verify current password against Firestore
+  var adminDoc = await fsGetDoc('settings', 'adminAuth');
+  var storedHash = adminDoc && adminDoc.passwordHash ? adminDoc.passwordHash : null;
+  if (!storedHash) {
+    errEl.textContent = 'Admin auth not configured';
+    errEl.style.display = 'block';
+    return;
+  }
+
   const hashedCurrent = await hashPassword(current);
-  if (hashedCurrent !== stored) {
+  if (hashedCurrent !== storedHash) {
     errEl.textContent = 'Current password is incorrect';
     errEl.style.display = 'block';
     return;
@@ -1694,8 +1683,12 @@ async function changeAdminPassword() {
   }
 
   const hashedNew = await hashPassword(newPass);
-  localStorage.setItem('mohini_admin_pass', hashedNew);
-  sessionStorage.setItem('mohini_admin_auth', hashedNew);
+  await fsSetDoc('settings', 'adminAuth', { passwordHash: hashedNew, updatedAt: new Date().toISOString() });
+
+  // Update session
+  var gateHash = await hashPassword('admin_session_' + Date.now());
+  sessionStorage.setItem('mohini_admin_auth', gateHash);
+  sessionStorage.setItem('mohini_admin_gate_hash', gateHash);
 
   okEl.textContent = 'Password updated successfully! New password will be required on next login.';
   okEl.style.display = 'block';
@@ -1920,7 +1913,6 @@ function renderEditSvcFileList() {
 async function removeSvcFile(svcIdx, fileIdx) {
   adminServices[svcIdx].sampleFiles.splice(fileIdx, 1);
   renderServices();
-  await saveAdminServices();
   toast('File removed.');
   await saveAdminServices();
 }

@@ -988,18 +988,17 @@ Time: {time}
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    // ---- ADMIN PASSWORD GATE (self-contained, no dependencies) ----
+    // ---- ADMIN PASSWORD GATE ----
     (function() {
-      var stored = localStorage.getItem('mohini_admin_pass');
       var session = sessionStorage.getItem('mohini_admin_auth');
+      var gateHash = sessionStorage.getItem('mohini_admin_gate_hash');
 
-      if (session && stored && session === stored) {
+      if (session && gateHash && session === gateHash) {
         var gate = document.getElementById('adminGate');
         var content = document.getElementById('adminContent');
         if (gate) gate.style.display = 'none';
         if (content) { content.style.display = ''; content.removeAttribute('id'); }
 
-        // Sign into Firebase Auth so Firestore writes work
         try {
           if (!fbAuth.currentUser) {
             fbAuth.signInAnonymously().catch(function(e) {
@@ -1009,49 +1008,91 @@ Time: {time}
         } catch(e) {}
 
         setTimeout(function() { if (typeof initAdmin === 'function') initAdmin(); }, 100);
-      } else if (!stored) {
-        // First time - set default hashed password
-        hashPassword('2017').then(function(hash) {
-          localStorage.setItem('mohini_admin_pass', hash);
-        });
       }
+      // NEVER auto-set password in localStorage — always require login
     })();
+
+    // Rate limiting
+    var _adminAttempts = parseInt(sessionStorage.getItem('mohini_admin_attempts') || '0');
+    var _adminLockUntil = parseInt(sessionStorage.getItem('mohini_admin_lock') || '0');
 
     async function checkAdminGate() {
       var input = document.getElementById('gatePassword').value.trim();
-      var stored = localStorage.getItem('mohini_admin_pass');
       if (!input) return;
 
-      var hashedInput = await hashPassword(input);
-      if (hashedInput === stored) {
-        sessionStorage.setItem('mohini_admin_auth', hashedInput);
-        var gate = document.getElementById('adminGate');
-        var content = document.getElementById('adminContent');
-        if (gate) gate.style.display = 'none';
-        if (content) { content.style.display = ''; content.removeAttribute('id'); }
+      // Check rate limit
+      if (Date.now() < _adminLockUntil) {
+        var mins = Math.ceil((_adminLockUntil - Date.now()) / 60000);
+        document.getElementById('gateError').style.display = 'block';
+        document.getElementById('gateError').textContent = 'Too many attempts. Locked for ' + mins + ' min.';
+        return;
+      }
 
-        // Sign into Firebase Auth so Firestore writes work
-        try {
-          if (!fbAuth.currentUser) {
-            await fbAuth.signInAnonymously();
-          }
-        } catch(e) {
-          console.warn('Firebase anonymous auth failed:', e);
+      document.getElementById('gateError').style.display = 'none';
+
+      // Get stored hash from Firestore (not localStorage)
+      try {
+        var adminDoc = await fsGetDoc('settings', 'adminAuth');
+        var storedHash = adminDoc && adminDoc.passwordHash ? adminDoc.passwordHash : null;
+
+        if (!storedHash) {
+          // First time — set default password '2017' in Firestore
+          var defaultHash = await hashPassword('2017');
+          await fsSetDoc('settings', 'adminAuth', { passwordHash: defaultHash, createdAt: new Date().toISOString() });
+          storedHash = defaultHash;
         }
 
-        setTimeout(function() {
-          if (typeof initAdmin === 'function') initAdmin();
-          if (typeof toast === 'function') toast('Welcome to Admin Panel');
-        }, 100);
-      } else {
+        var hashedInput = await hashPassword(input);
+        if (hashedInput === storedHash) {
+          var gateHash = await hashPassword('admin_session_' + Date.now());
+          sessionStorage.setItem('mohini_admin_auth', gateHash);
+          sessionStorage.setItem('mohini_admin_gate_hash', gateHash);
+          sessionStorage.removeItem('mohini_admin_attempts');
+          sessionStorage.removeItem('mohini_admin_lock');
+
+          var gate = document.getElementById('adminGate');
+          var content = document.getElementById('adminContent');
+          if (gate) gate.style.display = 'none';
+          if (content) { content.style.display = ''; content.removeAttribute('id'); }
+
+          try {
+            if (!fbAuth.currentUser) {
+              await fbAuth.signInAnonymously();
+            }
+          } catch(e) {
+            console.warn('Firebase anonymous auth failed:', e);
+          }
+
+          setTimeout(function() {
+            if (typeof initAdmin === 'function') initAdmin();
+            if (typeof toast === 'function') toast('Welcome to Admin Panel');
+          }, 100);
+        } else {
+          _adminAttempts++;
+          sessionStorage.setItem('mohini_admin_attempts', _adminAttempts);
+
+          if (_adminAttempts >= 5) {
+            _adminLockUntil = Date.now() + 900000;
+            sessionStorage.setItem('mohini_admin_lock', _adminLockUntil);
+            document.getElementById('gateError').style.display = 'block';
+            document.getElementById('gateError').textContent = 'Too many attempts. Locked for 15 minutes.';
+          } else {
+            document.getElementById('gateError').style.display = 'block';
+            document.getElementById('gateError').textContent = 'Invalid password. (' + _adminAttempts + '/5 attempts)';
+          }
+          document.getElementById('gatePassword').value = '';
+          document.getElementById('gatePassword').focus();
+        }
+      } catch(e) {
+        console.error('Admin auth check failed:', e);
         document.getElementById('gateError').style.display = 'block';
-        document.getElementById('gatePassword').value = '';
-        document.getElementById('gatePassword').focus();
+        document.getElementById('gateError').textContent = 'Connection error. Please try again.';
       }
     }
 
     function adminLogout() {
       sessionStorage.removeItem('mohini_admin_auth');
+      sessionStorage.removeItem('mohini_admin_gate_hash');
       location.reload();
     }
   </script>

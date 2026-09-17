@@ -8,6 +8,13 @@ const RAZORPAY_NAME = 'Mohini CSC Centre';
 
 // ---- Check Login ----
 function checkLogin() {
+  var fbUser = fbGetUser();
+  if (!fbUser) {
+    localStorage.removeItem('mohini_partner_login');
+    window.location.href = 'login.html';
+    return false;
+  }
+
   const data = localStorage.getItem('mohini_partner_login');
   if (!data) {
     window.location.href = 'login.html';
@@ -19,9 +26,8 @@ function checkLogin() {
       window.location.href = 'login.html';
       return false;
     }
-    // Also verify Firebase Auth state
-    var fbUser = fbGetUser();
-    if (!fbUser) {
+    // Verify Firebase UID matches localStorage UID
+    if (login.uid && login.uid !== fbUser.uid) {
       localStorage.removeItem('mohini_partner_login');
       window.location.href = 'login.html';
       return false;
