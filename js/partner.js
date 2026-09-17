@@ -10,12 +10,12 @@ const RAZORPAY_NAME = 'Mohini CSC Centre';
 function checkLogin() {
   var fbUser = fbGetUser();
   if (!fbUser) {
-    localStorage.removeItem('mohini_partner_login');
+    sessionStorage.removeItem('mohini_partner_login');
     window.location.href = 'login.html';
     return false;
   }
 
-  const data = localStorage.getItem('mohini_partner_login');
+  const data = sessionStorage.getItem('mohini_partner_login');
   if (!data) {
     window.location.href = 'login.html';
     return false;
@@ -28,18 +28,25 @@ function checkLogin() {
     }
     // Verify Firebase UID matches localStorage UID
     if (login.uid && login.uid !== fbUser.uid) {
-      localStorage.removeItem('mohini_partner_login');
+      sessionStorage.removeItem('mohini_partner_login');
       window.location.href = 'login.html';
       return false;
     }
     // Update UI with login info
-    const partnerId = login.partnerId || '';
-    const userName = login.name || 'Partner';
-    document.querySelectorAll('.sidebar-user small').forEach(el => el.textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID');
-    document.querySelectorAll('.profile-pill small').forEach(el => el.textContent = partnerId ? 'Partner ID: ' + partnerId : 'No Partner ID');
-    document.querySelectorAll('.avatar-sm').forEach(el => {
-      el.textContent = userName.charAt(0).toUpperCase();
-    });
+    const partnerId = loginData.partnerId || '';
+    const userName = loginData.name || 'Partner';
+    // Top nav profile chip
+    document.querySelectorAll('.profile-chip .info b').forEach(function(el) { el.textContent = userName; });
+    document.querySelectorAll('.profile-chip .info small').forEach(function(el) { el.textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID'; });
+    document.querySelectorAll('.profile-chip .avatar').forEach(function(el) { el.textContent = userName.charAt(0).toUpperCase(); });
+    // Welcome hero
+    document.querySelectorAll('.hero-avatar').forEach(function(el) { el.textContent = userName.charAt(0).toUpperCase(); });
+    var heroPartnerId = document.getElementById('heroPartnerId');
+    if (heroPartnerId) heroPartnerId.textContent = partnerId ? '🏢 ' + partnerId : '🏢 MOHINI CSC';
+    var heroPhone = document.getElementById('heroPhone');
+    if (heroPhone) heroPhone.textContent = '📱 ' + (loginData.contact || loginData.mobile || '—');
+    var heroAccountType = document.getElementById('heroAccountType');
+    if (heroAccountType) heroAccountType.textContent = partnerId ? '👤 Partner Account' : '👤 Retailer Account';
     return true;
   } catch(e) {
     window.location.href = 'login.html';
@@ -48,7 +55,7 @@ function checkLogin() {
 }
 
 function logout() {
-  localStorage.removeItem('mohini_partner_login');
+  sessionStorage.removeItem('mohini_partner_login');
   fbSignOut().catch(function() {});
   window.location.href = 'login.html';
 }
@@ -60,7 +67,7 @@ function deleteAccount() {
   var password = prompt('Enter your password to confirm deletion:');
   if (!password) { toast('Deletion cancelled.'); return; }
 
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
   var user = fbGetUser();
   var email = loginData.contact;
@@ -84,7 +91,7 @@ function deleteAccount() {
       return user.delete();
     });
   }).then(function() {
-    localStorage.removeItem('mohini_partner_login');
+    sessionStorage.removeItem('mohini_partner_login');
     toast('Account deleted.');
     setTimeout(function() { window.location.href = 'login.html'; }, 1000);
   }).catch(function(e) {
@@ -114,7 +121,7 @@ var services = {
 setTimeout(function() { renderServiceCards(); }, 0);
 
 function loadServicesFromAdmin() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var myPartnerId = loginData.partnerId || '';
 
   // Partner status is already determined at login — don't re-query partnerIds
@@ -128,9 +135,9 @@ function loadServicesFromAdmin() {
         myPartnerId = boughtIds[0].partnerId;
         hasPartnerId = true;
         loginData.partnerId = myPartnerId;
-        localStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
-        document.querySelectorAll('.sidebar-user small').forEach(function(el) { el.textContent = 'ID: ' + myPartnerId; });
-        document.querySelectorAll('.profile-pill small').forEach(function(el) { el.textContent = 'Partner ID: ' + myPartnerId; });
+        sessionStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
+        document.querySelectorAll('.profile-chip .info small').forEach(function(el) { el.textContent = 'ID: ' + myPartnerId; });
+        document.querySelectorAll('.hero-tag#heroPartnerId').forEach(function(el) { el.textContent = '🏢 ' + myPartnerId; });
       }
       return true;
     }).catch(function() { return true; });
@@ -187,7 +194,6 @@ function loadServicesFromAdmin() {
     services = sorted;
     renderServiceCards();
   }).catch(function(e) {
-    console.error('Failed to load services from Firestore:', e);
     renderServiceCards();
   });
   });
@@ -250,10 +256,9 @@ let txnCounter = 7782;
 
 // ---- Persistence: Save/Load Applications via Firestore ----
 async function saveApplications() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
-  console.log('[SAVE] Saving ' + applications.length + ' apps for uid:', uid, 'email:', loginData.email);
-  if (!uid) { console.error('[SAVE] No UID! Cannot save.'); toast('Error: Not logged in properly. Please login again.'); return false; }
+  if (!uid) { toast('Error: Not logged in properly. Please login again.'); return false; }
   try {
     // Save base64 data — images already compressed in doSave()
     // Limit to 3 docs per app to stay under Firestore 1MB document limit
@@ -267,32 +272,25 @@ async function saveApplications() {
       return clean;
     });
     await fsSetDoc('partnerApps', uid, { apps: cleanApps });
-    console.log('[SAVE] SUCCESS - apps saved to Firestore for uid:', uid);
     return true;
   } catch(e) {
-    console.error('[SAVE] FAILED:', e);
     toast('Error: Application not saved to server. Check connection.');
     return false;
   }
 }
 
 async function loadApplications() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
-  console.log('[LOAD] Loading apps for uid:', uid);
-  if (!uid) { console.warn('[LOAD] No UID found'); return; }
+  if (!uid) { return; }
   try {
     var doc = await fsGetDoc('partnerApps', uid);
-    console.log('[LOAD] Firestore returned:', doc);
     if (doc && doc.apps) {
       applications = doc.apps;
-      console.log('[LOAD] Loaded', applications.length, 'apps');
     } else {
-      console.log('[LOAD] No apps found in Firestore doc');
       applications = [];
     }
   } catch(e) {
-    console.error('[LOAD] Failed:', e);
     applications = [];
   }
   // Restore counters from saved data
@@ -306,7 +304,7 @@ async function loadApplications() {
 }
 
 async function saveWalletState() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
   if (!uid) return;
   try {
@@ -314,12 +312,12 @@ async function saveWalletState() {
       balance: walletBalance, added: walletAdded, used: walletUsed, txns: walletTxns, txnCounter: txnCounter
     });
   } catch(e) {
-    console.error('Failed to save wallet:', e);
+    /* silent */
   }
 }
 
 async function loadWalletState() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var uid = loginData.uid;
   if (!uid) return;
   try {
@@ -377,8 +375,7 @@ function switchView(view) {
   if (view === 'downloads') renderDownloads();
 }
 
-document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
-var _mobBtn = document.getElementById('mobileMenuBtn'); if (_mobBtn) _mobBtn.onclick = () => { var sb = document.getElementById('sidebar'); if (sb) sb.classList.toggle('open'); };
+// Nav click handlers are in index.html (top-nav + bottom-nav)
 
 // ---- Notifications ----
 var _notifBtn = document.getElementById('notifBtn');
@@ -764,7 +761,7 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     }
   });
 
-  const loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  const loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   const myPartnerId = loginData.partnerId || 'MCS-001';
   var appAmount = payAmount || (window._currentReqPrice || svc.price);
   if (svc.hasPartnerId && !payAmount && window._currentReqPartnerPrice) appAmount = window._currentReqPartnerPrice;
@@ -855,7 +852,6 @@ function finalizeApplication(svc, custName, custMobile, paymentInfo, payAmount) 
     }
     toast('Application ' + newApp.id + ' submitted and saved!');
   }).catch(function(e) {
-    console.error('[SAVE] Final save failed:', e);
     toast('Error: Application saved locally but NOT synced to server. Refresh to retry.');
   });
 }
@@ -1271,7 +1267,7 @@ function payAddMoney() {
     return;
   }
 
-  const loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  const loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   const options = {
     key: RAZORPAY_KEY_ID,
     amount: amount * 100,
@@ -1320,7 +1316,7 @@ function payAddMoney() {
 // ---- Support ----
 
 function loadTickets() {
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var myId = loginData.uid;
   if (!myId) return Promise.resolve([]);
   return fsGetDoc('partnerApps', myId).then(function(doc) {
@@ -1361,7 +1357,7 @@ function submitTicket() {
   var desc = document.getElementById('ticketDesc').value.trim();
   if (!appId || !desc) { toast('Please fill in application number and description.'); return; }
 
-  var loginData = JSON.parse(localStorage.getItem('mohini_partner_login') || '{}');
+  var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
   var myId = loginData.uid;
   var myPartnerId = loginData.partnerId || '';
   var now = formatDate(new Date());

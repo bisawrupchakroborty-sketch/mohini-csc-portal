@@ -56,7 +56,6 @@ let adminServices = [
 ];
 
 async function saveAdminServices() {
-  console.log('[SAVE-SVC] Saving', adminServices.length, 'services...');
   var promises = adminServices.map(function(s, idx) {
     var docId = s.name.replace(/[\/\.\#\[\]\$]/g, '_');
     var data = {
@@ -66,15 +65,12 @@ async function saveAdminServices() {
       docs: s.docs || [], instructions: s.instructions || '', sampleFiles: s.sampleFiles || [],
       aadhaarRequired: s.aadhaarRequired || false, position: idx
     };
-    console.log('[SAVE-SVC] Saving:', s.name, 'docId:', docId, 'reqTypes:', (s.requestTypes||[]).length);
     return fsSetDoc('services', docId, data).then(function() {
-      console.log('[SAVE-SVC] OK:', s.name);
     }).catch(function(e) {
-      console.error('[SAVE-SVC] FAILED:', s.name, e);
+      /* silent */
     });
   });
   await Promise.all(promises);
-  console.log('[SAVE-SVC] All done');
 }
 
 async function loadAdminServices() {
@@ -83,7 +79,6 @@ async function loadAdminServices() {
 
   try {
     var saved = await fsGetCollection('services');
-    console.log('[LOAD-SVC] Firestore returned', saved.length, 'services');
     if (saved && saved.length > 0) {
       adminServices = saved.map(function(s) {
         var result = Object.assign({}, s);
@@ -100,7 +95,6 @@ async function loadAdminServices() {
           if (typeof result.enabled !== 'boolean') result.enabled = def.enabled;
           if (result.enabled === undefined) result.enabled = def.enabled;
         }
-        console.log('[LOAD-SVC]', result.name, 'reqTypes:', (result.requestTypes||[]).length, 'fromFirestore:', hadReqTypes);
         return result;
       });
       adminServices.sort(function(a, b) {
@@ -110,7 +104,7 @@ async function loadAdminServices() {
       });
     }
   } catch(e) {
-    console.error('[LOAD-SVC] Failed:', e);
+    /* silent */
   }
   renderServices();
 }
@@ -132,7 +126,7 @@ async function saveAdminApps() {
   try {
     await fsSetDoc('adminData', 'apps', { apps: adminApps });
   } catch(e) {
-    console.error('Failed to save admin apps:', e);
+    /* silent */
   }
 }
 
@@ -148,11 +142,9 @@ async function loadAdminApps() {
   // Also load from all partner app collections
   try {
     var partnerDocs = await fsGetCollection('partnerApps');
-    console.log('[ADMIN] partnerApps docs found:', partnerDocs.length);
     partnerDocs.forEach(function(pData) {
       var partnerUid = pData._id;
       var apps = pData.apps || [];
-      console.log('[ADMIN] Partner', partnerUid, 'has', apps.length, 'apps');
       apps.forEach(function(a) {
         // Partner saves partnerId field, admin uses partner field — normalize
         if (!a.partner) {
@@ -183,7 +175,7 @@ async function loadAdminApps() {
       });
     });
   } catch(e) {
-    console.error('Failed to load partner apps:', e);
+    /* silent */
   }
 
   // Load partner names from Firestore partners collection
@@ -205,7 +197,7 @@ async function savePartners() {
   try {
     await fsSetDoc('adminData', 'partners', { partners: partners });
   } catch(e) {
-    console.error('Failed to save partners:', e);
+    /* silent */
   }
 }
 
@@ -558,8 +550,8 @@ function syncAppToPartner(a) {
     } else {
       apps.push(a);
     }
-    fsSetDoc('partnerApps', docId, { apps: apps }).catch(function(e){ console.warn('syncAppToPartner failed:', e); });
-  }).catch(function(e){ console.warn('syncAppToPartner read failed:', e); });
+    fsSetDoc('partnerApps', docId, { apps: apps }).catch(function(e){ /* silent */ });
+  }).catch(function(e){ /* silent */ });
 }
 
 // ---- Partners ----
@@ -1161,7 +1153,7 @@ async function renderPayments(data, search, statusFilter) {
         });
       });
     });
-  } catch(e) { console.error('Failed to load wallet txns:', e); }
+  } catch(e) { /* silent */ }
 
   // Load Partner ID purchases from Firestore
   try {
@@ -1180,7 +1172,7 @@ async function renderPayments(data, search, statusFilter) {
         date: d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
       });
     });
-  } catch(e) { console.error('Failed to load partner ID purchases:', e); }
+  } catch(e) { /* silent */ }
 
   // Also load from payments collection (from signup flow)
   try {
@@ -1535,7 +1527,6 @@ async function saveSettings(section) {
     }
     toast(section + ' settings saved successfully!');
   } catch(e) {
-    console.error('Failed to save settings:', e);
     toast('Save failed. Check connection.');
   }
 }
@@ -1612,7 +1603,6 @@ async function toggleMaintenanceMode() {
     initMaintenanceUI();
     toast(maintenanceMode ? '⚠ Maintenance mode ACTIVATED. Partner portal shows maintenance page.' : '✓ Maintenance mode DEACTIVATED. Portal is live.');
   } catch(e) {
-    console.error('Failed to toggle maintenance:', e);
     toast('❌ Failed to update maintenance mode. Check your connection.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔧 Toggle Maintenance Mode'; }
@@ -1671,8 +1661,8 @@ async function changeAdminPassword() {
     errEl.style.display = 'block';
     return;
   }
-  if (newPass.length < 4) {
-    errEl.textContent = 'New password must be at least 4 characters';
+  if (newPass.length < 8) {
+    errEl.textContent = 'New password must be at least 8 characters';
     errEl.style.display = 'block';
     return;
   }
@@ -1795,7 +1785,6 @@ function initAdmin() {
     renderDocRows();
     renderAdminTickets();
   }).catch(function(e) {
-    console.error('Admin init error:', e);
     updateAdminStats();
     renderOverviewQueue();
     renderAdminApps();

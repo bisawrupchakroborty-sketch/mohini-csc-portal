@@ -6,9 +6,99 @@
   <title>Mohini CSC Centre — Partner Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/partner.css">
+  <style>
+    /* ===== TOP NAVBAR ===== */
+    .top-nav{position:fixed;top:0;left:0;right:0;z-index:999;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:0 24px;height:64px;display:flex;align-items:center;gap:16px}
+    .top-nav .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+    .top-nav .nav-brand img{width:40px;height:40px;border-radius:12px;object-fit:contain}
+    .top-nav .nav-brand span{font-size:15px;font-weight:800;color:#1e293b;letter-spacing:-.02em}
+    .top-nav .nav-links{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;overflow-x:auto}
+    .top-nav .nav-links a{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;color:#64748b;text-decoration:none;white-space:nowrap;transition:all .2s}
+    .top-nav .nav-links a:hover{background:#f1f5f9;color:#1e293b}
+    .top-nav .nav-links a.active{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.3)}
+    .top-nav .nav-links a .nav-icon{font-size:15px}
+    .top-nav .nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+    .top-nav .profile-chip{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:40px;cursor:pointer;transition:all .2s}
+    .top-nav .profile-chip:hover{border-color:#4f46e5}
+    .top-nav .profile-chip .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+    .top-nav .profile-chip .info{line-height:1.2}
+    .top-nav .profile-chip .info b{font-size:12px;color:#1e293b;display:block}
+    .top-nav .profile-chip .info small{font-size:10px;color:#94a3b8}
+    @media(max-width:1024px){.top-nav .nav-links{display:none}.top-nav{justify-content:space-between}}
+
+    /* ===== WELCOME HERO ===== */
+    .welcome-hero{background:linear-gradient(135deg,#eef2ff 0%,#f0f9ff 50%,#faf5ff 100%);border-radius:20px;padding:32px 36px;margin-bottom:24px;display:flex;align-items:center;gap:28px;position:relative;overflow:hidden}
+    .welcome-hero::after{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:linear-gradient(135deg,rgba(79,70,229,.08),rgba(124,58,237,.08));border-radius:50%;filter:blur(40px)}
+    .welcome-hero .hero-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:grid;place-items:center;font-size:28px;font-weight:900;flex-shrink:0;box-shadow:0 8px 24px rgba(79,70,229,.25)}
+    .welcome-hero .hero-info{flex:1;position:relative;z-index:1}
+    .welcome-hero .hero-info h1{font-size:26px;font-weight:900;color:#1e293b;margin-bottom:4px;letter-spacing:-.02em}
+    .welcome-hero .hero-info p{font-size:14px;color:#64748b;margin-bottom:12px}
+    .welcome-hero .hero-tags{display:flex;gap:10px;flex-wrap:wrap}
+    .welcome-hero .hero-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;color:#475569}
+    .welcome-hero .hero-tag svg{width:14px;height:14px}
+    @media(max-width:768px){.welcome-hero{flex-direction:column;text-align:center;padding:24px 20px}.welcome-hero .hero-tags{justify-content:center}}
+
+    /* ===== SOCIAL BANNER ===== */
+    .social-banner{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    .social-card{display:flex;align-items:center;gap:14px;padding:16px 20px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;transition:all .2s;cursor:pointer;text-decoration:none}
+    .social-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+    .social-card.yt{border-color:rgba(239,68,68,.2)}
+    .social-card.yt:hover{background:#fef2f2}
+    .social-card.wa{border-color:rgba(37,211,102,.2)}
+    .social-card.wa:hover{background:#f0fdf4}
+    .social-card .social-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex-shrink:0}
+    .social-card.yt .social-icon{background:#fee2e2;color:#dc2626}
+    .social-card.wa .social-icon{background:#dcfce7;color:#16a34a}
+    .social-card .social-text b{font-size:13px;color:#1e293b;display:block}
+    .social-card .social-text small{font-size:11px;color:#94a3b8;line-height:1.4}
+    @media(max-width:768px){.social-banner{grid-template-columns:1fr}}
+    @media(max-width:1024px){.social-banner{display:none}}
+
+    /* ===== COLORFUL STAT CARDS ===== */
+    .color-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    .color-stat{padding:22px 20px;border-radius:16px;color:#fff;position:relative;overflow:hidden;transition:transform .2s}
+    .color-stat:hover{transform:translateY(-3px)}
+    .color-stat .stat-bg{position:absolute;right:-10px;top:-10px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12)}
+    .color-stat .stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85;margin-bottom:8px}
+    .color-stat .stat-value{font-size:28px;font-weight:900;margin-bottom:4px}
+    .color-stat .stat-sub{font-size:12px;opacity:.7;display:flex;align-items:center;gap:4px}
+    .color-stat.purple{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+    .color-stat.blue{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+    .color-stat.orange{background:linear-gradient(135deg,#ea580c,#f97316)}
+    .color-stat.green{background:linear-gradient(135deg,#059669,#10b981)}
+    @media(max-width:1024px){.color-stats{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.color-stats{grid-template-columns:1fr}}
+
+    /* ===== DASHBOARD CONTENT ===== */
+    .dash-section{margin-bottom:24px}
+    .dash-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .dash-section-header h3{font-size:16px;font-weight:700;color:#1e293b}
+    .dash-section-header a{font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none}
+    .dash-section-header a:hover{text-decoration:underline}
+
+    /* ===== BOTTOM MOBILE NAV ===== */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;z-index:999;padding:8px 0;display:none;box-shadow:0 -4px 12px rgba(0,0,0,.06)}
+    .bottom-nav-inner{display:flex;justify-content:space-around;align-items:center}
+    .bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;text-decoration:none;color:#94a3b8;font-size:10px;font-weight:600;border-radius:10px;transition:all .2s}
+    .bottom-nav-item.active{color:#4f46e5;background:#f0f0ff}
+    .bottom-nav-item .bnav-icon{font-size:18px}
+    @media(max-width:1024px){.bottom-nav{display:block}}
+
+    /* Override common.css sidebar for desktop */
+    @media(min-width:1025px){
+      .sidebar{display:none}
+      .main{margin-left:0;width:100%}
+      .content{padding:80px 32px 40px}
+      .topbar{display:none}
+    }
+    @media(max-width:1024px){
+      .content{padding:80px 16px 90px}
+      .topbar{display:none}
+    }
+  </style>
 </head>
 <body>
   <!-- Loading Overlay -->
@@ -26,90 +116,131 @@
     </div>
   </div>
 
-  <div class="app-shell">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <img src="logo.png" alt="Mohini CSC Centre">
-        <div>
-          <strong>MOHINI CSC</strong>
-          <span>PARTNER PORTAL</span>
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <a class="nav-brand" href="index.html">
+      <img src="logo.png" alt="Mohini CSC">
+      <span>MOHINI CSC</span>
+    </a>
+    <div class="nav-links">
+      <a href="#" class="active" data-view="dashboard"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="#" data-view="services"><span class="nav-icon">🔍</span> All Services</a>
+      <a href="#" data-view="applications"><span class="nav-icon">📋</span> My Applications</a>
+      <a href="#" data-view="wallet"><span class="nav-icon">💰</span> Wallet</a>
+      <a href="#" data-view="downloads"><span class="nav-icon">📥</span> Downloads</a>
+      <a href="#" data-view="support"><span class="nav-icon">💬</span> Support</a>
+    </div>
+    <div class="nav-right">
+      <div class="profile-chip" onclick="toggleProfileMenu()">
+        <div class="avatar">M</div>
+        <div class="info">
+          <b>Mohini Partner</b>
+          <small>No Partner ID</small>
         </div>
       </div>
-      <nav id="sideNav">
-        <button class="nav-item active" data-view="dashboard"><i>⌂</i> Dashboard</button>
-        <button class="nav-item" data-view="services"><i>▦</i> Services</button>
-        <button class="nav-item" data-view="applications"><i>↻</i> My Applications</button>
-        <button class="nav-item" data-view="wallet"><i>₹</i> Wallet & Payments</button>
-        <button class="nav-item" data-view="downloads"><i>⇩</i> Downloads</button>
-        <button class="nav-item" data-view="support"><i>?</i> Support</button>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="avatar-sm">M</div>
-          <div>
-            <b>Mohini Partner</b>
-            <small>No Partner ID</small>
-          </div>
-        </div>
-        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;color:var(--danger);justify-content:center" onclick="logout()">🚪 Logout</button>
-        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;color:var(--danger);justify-content:center;font-size:11px" onclick="deleteAccount()">🗑 Delete Account</button>
-      </div>
-    </aside>
+    </div>
+  </nav>
 
-    <!-- Main Content -->
-    <main class="main">
-      <!-- Topbar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="mobile-menu" id="mobileMenuBtn">☰</button>
-          <div class="breadcrumb">
-            <span id="pageKicker">Overview</span>
-            <b id="pageTitle">Dashboard</b>
-          </div>
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Topbar (hidden on desktop, used for mobile) -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu" id="mobileMenuBtn">☰</button>
+        <div class="breadcrumb">
+          <span id="pageKicker">Overview</span>
+          <b id="pageTitle">Dashboard</b>
         </div>
-        <div class="topbar-right">
-          <div style="position:relative">
-            <button class="icon-btn" id="notifBtn">🔔<span class="badge" id="notifBadge">0</span></button>
-            <div class="notif-dropdown" id="notifDropdown">
-              <div id="notifList">
-                <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No notifications</div>
-              </div>
-            </div>
-          </div>
-          <div class="profile-pill">
-            <div class="avatar-sm">M</div>
-            <div>
-              <b>Mohini Partner</b>
-              <small>No Partner ID</small>
+      </div>
+      <div class="topbar-right">
+        <div style="position:relative">
+          <button class="icon-btn" id="notifBtn">🔔<span class="badge" id="notifBadge">0</span></button>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div id="notifList">
+              <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No notifications</div>
             </div>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <!-- Content Area -->
-      <section class="content">
+    <section class="content">
 
-        <!-- ========== DASHBOARD ========== -->
-        <div id="dashboardView" class="view active">
-          <div class="page-intro">
-            <span class="eyebrow">MOHINI CSC CENTRE</span>
-            <h1 id="pageGreeting">Good evening, Partner</h1>
-            <p>Submit customer requests, upload documents and track every application from one place.</p>
+      <!-- ========== DASHBOARD ========== -->
+      <div id="dashboardView" class="view active">
+        <!-- Welcome Hero -->
+        <div class="welcome-hero">
+          <div class="hero-avatar" id="heroAvatar">M</div>
+          <div class="hero-info">
+            <h1 id="pageGreeting">Welcome back, Partner!</h1>
+            <p>Track your wallet, service sales, revenue and latest transactions from one dashboard.</p>
+            <div class="hero-tags">
+              <div class="hero-tag" id="heroPartnerId">🏢 MOHINI CSC</div>
+              <div class="hero-tag" id="heroAccountType">👤 Retailer Account</div>
+              <div class="hero-tag" id="heroPhone">📱 —</div>
+            </div>
           </div>
+        </div>
 
-          <div class="stats-grid" id="dashboardStats">
-            <div class="stat-card"><div class="stat-icon blue">▤</div><div class="stat-info"><span>Total Applications</span><strong id="statTotal">0</strong><small>No applications yet</small></div></div>
-            <div class="stat-card"><div class="stat-icon amber">◷</div><div class="stat-info"><span>In Processing</span><strong id="statProcessing">0</strong><small>Needs attention</small></div></div>
-            <div class="stat-card"><div class="stat-icon green">✓</div><div class="stat-info"><span>Completed</span><strong id="statCompleted">0</strong><small>Completion rate</small></div></div>
-            <div class="stat-card"><div class="stat-icon violet">₹</div><div class="stat-info"><span>Wallet Balance</span><strong id="statWallet">₹0</strong><small>Ready for use</small></div></div>
+        <!-- Social Banner -->
+        <div class="social-banner">
+          <a href="https://youtube.com/@mohinicsc" target="_blank" class="social-card yt">
+            <div class="social-icon">▶️</div>
+            <div class="social-text">
+              <b>Subscribe YouTube Channel</b>
+              <small>Nayi service video, tutorial aur latest update sabse pehle paane ke liye Subscribe karein!</small>
+            </div>
+          </a>
+          <a href="https://whatsapp.com/channel/mohinicsc" target="_blank" class="social-card wa">
+            <div class="social-icon">💬</div>
+            <div class="social-text">
+              <b>Follow WhatsApp Channel</b>
+              <small>Nayi service, live update, offer aur mahatvapurna soochna turant paane ke liye Follow karein!</small>
+            </div>
+          </a>
+        </div>
+
+        <!-- Colorful Stats -->
+        <div class="color-stats">
+          <div class="color-stat purple">
+            <div class="stat-bg"></div>
+            <div class="stat-label">Wallet Balance</div>
+            <div class="stat-value" id="statWallet">₹0.00</div>
+            <div class="stat-sub">● Available balance</div>
           </div>
-
-          <div class="card-header"><div><h3>Popular Services</h3></div><button class="btn btn-ghost btn-sm" onclick="switchView('services')">View all →</button></div>
-          <div class="service-grid" id="dashServiceGrid" style="margin-bottom:28px">
+          <div class="color-stat blue">
+            <div class="stat-bg"></div>
+            <div class="stat-label">Total Services</div>
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-sub">⚡ Today: 0 services</div>
           </div>
+          <div class="color-stat orange">
+            <div class="stat-bg"></div>
+            <div class="stat-label">In Processing</div>
+            <div class="stat-value" id="statProcessing">0</div>
+            <div class="stat-sub">📋 Needs attention</div>
+          </div>
+          <div class="color-stat green">
+            <div class="stat-bg"></div>
+            <div class="stat-label">Completed</div>
+            <div class="stat-value" id="statCompleted">0</div>
+            <div class="stat-sub">✅ Completion rate</div>
+          </div>
+        </div>
 
-          <div class="card-header"><div><h3>Recent Applications</h3></div><button class="btn btn-ghost btn-sm" onclick="switchView('applications')">Open applications →</button></div>
+        <div class="dash-section">
+          <div class="dash-section-header">
+            <h3>Popular Services</h3>
+            <a href="#" onclick="switchView('services');return false">View all →</a>
+          </div>
+          <div class="service-grid" id="dashServiceGrid"></div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-section-header">
+            <h3>Recent Applications</h3>
+            <a href="#" onclick="switchView('applications');return false">Open applications →</a>
+          </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Status</th><th>Amount</th><th>Date</th><th></th></tr></thead>
@@ -117,121 +248,134 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- ========== SERVICES ========== -->
-        <div id="servicesView" class="view">
-          <div class="page-intro">
-            <span class="eyebrow">SERVICE CATALOG</span>
-            <h1>Services</h1>
-            <p>Start a new customer application by selecting a service.</p>
-          </div>
-          <div class="service-grid" id="svcServiceGrid"></div>
+      <!-- ========== SERVICES ========== -->
+      <div id="servicesView" class="view">
+        <div class="page-intro">
+          <span class="eyebrow">SERVICE CATALOG</span>
+          <h1>Services</h1>
+          <p>Start a new customer application by selecting a service.</p>
         </div>
+        <div class="service-grid" id="svcServiceGrid"></div>
+      </div>
 
-        <!-- ========== MY APPLICATIONS ========== -->
-        <div id="applicationsView" class="view">
-          <div class="page-intro">
-            <span class="eyebrow">WORKFLOW</span>
-            <h1>My Applications</h1>
-            <p>Track customer requests from submission to completion.</p>
-          </div>
-          <div class="filters">
-            <input id="searchApp" placeholder="Search application or customer…" oninput="filterApplications()">
-            <select id="filterStatus" onchange="filterApplications()">
-              <option value="">All Statuses</option>
-              <option value="Draft">Draft</option>
-              <option value="Payment Pending">Payment Pending</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Document Checking">Document Checking</option>
-              <option value="Processing">Processing</option>
-              <option value="Correction Required">Correction Required</option>
-              <option value="Completed">Completed</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Status</th><th>Amount</th><th>Submitted</th><th>Updated</th><th>Action</th></tr></thead>
-              <tbody id="applicationsRows"></tbody>
-            </table>
-          </div>
-          <div class="pagination" id="appPagination"></div>
+      <!-- ========== MY APPLICATIONS ========== -->
+      <div id="applicationsView" class="view">
+        <div class="page-intro">
+          <span class="eyebrow">WORKFLOW</span>
+          <h1>My Applications</h1>
+          <p>Track customer requests from submission to completion.</p>
         </div>
+        <div class="filters">
+          <input id="searchApp" placeholder="Search application or customer…" oninput="filterApplications()">
+          <select id="filterStatus" onchange="filterApplications()">
+            <option value="">All Statuses</option>
+            <option value="Draft">Draft</option>
+            <option value="Payment Pending">Payment Pending</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Document Checking">Document Checking</option>
+            <option value="Processing">Processing</option>
+            <option value="Correction Required">Correction Required</option>
+            <option value="Completed">Completed</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Application</th><th>Customer</th><th>Service</th><th>Status</th><th>Amount</th><th>Submitted</th><th>Updated</th><th>Action</th></tr></thead>
+            <tbody id="applicationsRows"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="appPagination"></div>
+      </div>
 
-        <!-- ========== WALLET ========== -->
-        <div id="walletView" class="view">
-          <div class="page-intro">
-            <span class="eyebrow">FINANCE</span>
-            <h1>Wallet & Payments</h1>
-            <p>Manage your service payments and transaction history.</p>
+      <!-- ========== WALLET ========== -->
+      <div id="walletView" class="view">
+        <div class="page-intro">
+          <span class="eyebrow">FINANCE</span>
+          <h1>Wallet & Payments</h1>
+          <p>Manage your service payments and transaction history.</p>
+        </div>
+        <div class="wallet-balance">
+          <div class="wb-info">
+            <small>Available Balance</small>
+            <strong id="walletBalance">₹0.00</strong>
+            <span>Partner Wallet</span>
           </div>
-          <div class="wallet-balance">
-            <div class="wb-bubbles"></div>
-            <div class="wb-info">
-              <small>Available Balance</small>
-              <strong id="walletBalance">₹0.00</strong>
-              <span>Partner Wallet</span>
+          <button class="btn btn-secondary" style="color:#fff;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);white-space:nowrap" onclick="openAddMoneyModal()">+ Add Money</button>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card"><div class="stat-info"><span>Total Added</span><strong id="walletAdded">₹0</strong></div></div>
+          <div class="stat-card"><div class="stat-info"><span>Total Used</span><strong id="walletUsed">₹0</strong></div></div>
+          <div class="stat-card"><div class="stat-info"><span>Transactions</span><strong id="walletTxnCount">0</strong></div></div>
+        </div>
+        <div class="card-header"><h3>Transaction History</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Transaction ID</th><th>Type</th><th>Application</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="walletTxnRows">
+              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">No transactions yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========== DOWNLOADS ========== -->
+      <div id="downloadsView" class="view">
+        <div class="page-intro">
+          <span class="eyebrow">FILES</span>
+          <h1>Downloads</h1>
+          <p>Completed results shared by Mohini CSC Centre.</p>
+        </div>
+        <div class="filters">
+          <input id="searchDownloads" placeholder="Search by application, customer, service…" oninput="filterDownloads()">
+        </div>
+        <div id="downloadGroups"></div>
+      </div>
+
+      <!-- ========== SUPPORT ========== -->
+      <div id="supportView" class="view">
+        <div class="page-intro">
+          <span class="eyebrow">HELP DESK</span>
+          <h1>Support</h1>
+          <p>Need help with an application? Contact Mohini CSC Centre.</p>
+        </div>
+        <div class="service-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-bottom:28px">
+          <div class="card">
+            <h3 style="margin-bottom:8px">Create Support Ticket</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Describe your issue and our team will assist you.</p>
+            <div class="form-group"><label>Application Number</label><input id="ticketAppId" placeholder="e.g. #MCS-1048"></div>
+            <div class="form-group"><label>Issue Type</label><select id="ticketType"><option>Application Status</option><option>Document Issue</option><option>Payment Issue</option><option>Correction Help</option><option>Other</option></select></div>
+            <div class="form-group"><label>Description</label><textarea id="ticketDesc" rows="3" placeholder="Describe your issue…"></textarea></div>
+            <button class="btn btn-primary" onclick="submitTicket()">Submit Ticket</button>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:12px">Your Tickets</h3>
+            <div id="ticketsList">
+              <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px">No tickets yet</p>
             </div>
-            <button class="btn btn-secondary" style="color:#fff;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);white-space:nowrap" onclick="openAddMoneyModal()">+ Add Money</button>
-          </div>
-          <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-            <div class="stat-card"><div class="stat-info"><span>Total Added</span><strong id="walletAdded">₹0</strong></div></div>
-            <div class="stat-card"><div class="stat-info"><span>Total Used</span><strong id="walletUsed">₹0</strong></div></div>
-            <div class="stat-card"><div class="stat-info"><span>Transactions</span><strong id="walletTxnCount">0</strong></div></div>
-          </div>
-          <div class="card-header"><h3>Transaction History</h3></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Transaction ID</th><th>Type</th><th>Application</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-              <tbody id="walletTxnRows">
-                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">No transactions yet</td></tr>
-              </tbody>
-            </table>
           </div>
         </div>
+      </div>
 
-        <!-- ========== DOWNLOADS ========== -->
-        <div id="downloadsView" class="view">
-          <div class="page-intro">
-            <span class="eyebrow">FILES</span>
-            <h1>Downloads</h1>
-            <p>Completed results shared by Mohini CSC Centre.</p>
-          </div>
-          <div class="filters">
-            <input id="searchDownloads" placeholder="Search by application, customer, service…" oninput="filterDownloads()">
-          </div>
-          <div id="downloadGroups"></div>
-        </div>
+    </section>
+  </main>
 
-        <!-- ========== SUPPORT ========== -->
-        <div id="supportView" class="view">
-          <div class="page-intro">
-            <span class="eyebrow">HELP DESK</span>
-            <h1>Support</h1>
-            <p>Need help with an application? Contact Mohini CSC Centre.</p>
-          </div>
-          <div class="service-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-bottom:28px">
-            <div class="card">
-              <h3 style="margin-bottom:8px">Create Support Ticket</h3>
-              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Describe your issue and our team will assist you.</p>
-              <div class="form-group"><label>Application Number</label><input id="ticketAppId" placeholder="e.g. #MCS-1048"></div>
-              <div class="form-group"><label>Issue Type</label><select id="ticketType"><option>Application Status</option><option>Document Issue</option><option>Payment Issue</option><option>Correction Help</option><option>Other</option></select></div>
-              <div class="form-group"><label>Description</label><textarea id="ticketDesc" rows="3" placeholder="Describe your issue…"></textarea></div>
-              <button class="btn btn-primary" onclick="submitTicket()">Submit Ticket</button>
-            </div>
-            <div class="card">
-              <h3 style="margin-bottom:12px">Your Tickets</h3>
-              <div id="ticketsList">
-                <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px">No tickets yet</p>
-              </div>
-            </div>
-          </div>
-        </div>
+  <!-- Bottom Mobile Nav -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <a href="#" class="bottom-nav-item active" data-view="dashboard"><span class="bnav-icon">🏠</span> Home</a>
+      <a href="#" class="bottom-nav-item" data-view="services"><span class="bnav-icon">🔍</span> Services</a>
+      <a href="#" class="bottom-nav-item" data-view="applications"><span class="bnav-icon">📋</span> Apps</a>
+      <a href="#" class="bottom-nav-item" data-view="wallet"><span class="bnav-icon">💰</span> Wallet</a>
+      <a href="#" class="bottom-nav-item" data-view="support"><span class="bnav-icon">💬</span> Help</a>
+    </div>
+  </nav>
 
-      </section>
-    </main>
-  </div>
+  <!-- WhatsApp Floating Button -->
+  <a href="https://wa.me/919876543210?text=Hi%20Mohini%20CSC%20Centre%2C%20I%20need%20help" target="_blank" class="whatsapp-float" style="position:fixed;bottom:80px;right:20px;z-index:998;background:#25d366;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 20px rgba(37,211,102,.4);text-decoration:none;transition:transform .2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</a>
 
   <!-- Application Drawer -->
   <div class="overlay" id="appOverlay" onclick="closeDrawer(event)">
@@ -251,8 +395,6 @@
       </div>
       <div class="drawer-body">
         <form id="applicationForm" onsubmit="return false">
-
-          <!-- Step 1: Customer Details -->
           <div class="form-step active" id="formStep1">
             <div class="notice"><b>Customer Information</b><span>Enter details exactly as provided by the customer.</span></div>
             <div class="form-group"><label>Customer Full Name *</label><input id="custName" required placeholder="Enter full name"></div>
@@ -267,8 +409,6 @@
               <button class="btn btn-primary" onclick="goStep(2)">Continue to Documents →</button>
             </div>
           </div>
-
-          <!-- Step 2: Documents -->
           <div class="form-step" id="formStep2">
             <div id="reqInstructions"></div>
             <div class="notice"><b>Required Documents</b><span>Upload clear, readable documents applicable to this request.</span></div>
@@ -282,8 +422,6 @@
               <button class="btn btn-primary" onclick="goStep(3)">Review Application →</button>
             </div>
           </div>
-
-          <!-- Step 3: Review -->
           <div class="form-step" id="formStep3">
             <div class="notice"><b>Review & Declaration</b><span>Verify all information before proceeding to payment.</span></div>
             <div id="reviewBox" style="margin-bottom:16px"></div>
@@ -300,8 +438,6 @@
               <button class="btn btn-primary" id="payBtn" disabled onclick="goStep(4)">Continue to Payment →</button>
             </div>
           </div>
-
-          <!-- Step 4: Payment -->
           <div class="form-step" id="formStep4">
             <div class="notice"><b>Payment</b><span>Complete payment to submit your application.</span></div>
             <div id="paymentSummary" style="text-align:center;padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px">
@@ -320,7 +456,6 @@
               <button class="btn btn-success btn-lg" id="paySubmitBtn" onclick="submitApplication()">✓ Pay & Submit</button>
             </div>
           </div>
-
         </form>
       </div>
     </section>
@@ -392,7 +527,24 @@
   <script src="js/auth.js"></script>
   <script src="js/partner.js"></script>
   <script>
-    document.getElementById('pageGreeting').textContent = getGreeting() + ', Partner';
+    // Greeting
+    document.getElementById('pageGreeting').textContent = 'Welcome back, ' + (JSON.parse(sessionStorage.getItem('mohini_partner_login')||'{}').name || 'Partner') + '!';
+
+    // Top nav active state
+    document.querySelectorAll('.nav-links a, .bottom-nav-item').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        var view = this.getAttribute('data-view');
+        if (view) switchView(view);
+        document.querySelectorAll('.nav-links a').forEach(function(a){a.classList.remove('active')});
+        document.querySelectorAll('.bottom-nav-item').forEach(function(a){a.classList.remove('active')});
+        document.querySelectorAll('[data-view="'+view+'"]').forEach(function(a){a.classList.add('active')});
+      });
+    });
+
+    function toggleProfileMenu() {
+      // Could add dropdown menu later
+    }
   </script>
 </body>
 </html>

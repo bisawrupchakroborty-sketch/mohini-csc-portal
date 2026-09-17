@@ -909,7 +909,7 @@ Time: {time}
                 <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:var(--primary)" disabled><span>File type validation (JPG, PNG, PDF only)</span></label></div>
                 <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:var(--primary)" disabled><span>Audit logging for all admin actions</span></label></div>
                 <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:var(--primary)"><span>Maintenance mode (site down for updates)</span></label></div>
-                <p style="font-size:11px;color:var(--text-muted);margin-top:12px">⚠️ Password is stored in browser localStorage. Use strong password. Session expires when browser closes.</p>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:12px">⚠️ Password is hashed in Firestore. Session expires on browser close or 30 min inactivity.</p>
               </div>
             </div>
           </div>
@@ -990,10 +990,19 @@ Time: {time}
   <script>
     // ---- ADMIN PASSWORD GATE ----
     (function() {
+      // Session timeout: 30 min inactivity
+      var sessionTime = parseInt(sessionStorage.getItem('mohini_admin_session_time') || '0');
+      if (sessionTime && Date.now() - sessionTime > 1800000) {
+        sessionStorage.removeItem('mohini_admin_auth');
+        sessionStorage.removeItem('mohini_admin_gate_hash');
+        sessionStorage.removeItem('mohini_admin_session_time');
+      }
+
       var session = sessionStorage.getItem('mohini_admin_auth');
       var gateHash = sessionStorage.getItem('mohini_admin_gate_hash');
 
       if (session && gateHash && session === gateHash) {
+        sessionStorage.setItem('mohini_admin_session_time', Date.now());
         var gate = document.getElementById('adminGate');
         var content = document.getElementById('adminContent');
         if (gate) gate.style.display = 'none';
@@ -1001,15 +1010,13 @@ Time: {time}
 
         try {
           if (!fbAuth.currentUser) {
-            fbAuth.signInAnonymously().catch(function(e) {
-              console.warn('Firebase anonymous auth failed:', e);
-            });
+            fbAuth.signInAnonymously().catch(function() {});
           }
         } catch(e) {}
 
         setTimeout(function() { if (typeof initAdmin === 'function') initAdmin(); }, 100);
       }
-      // NEVER auto-set password in localStorage — always require login
+      // NEVER auto-set password — always require login
     })();
 
     // Rate limiting
@@ -1036,10 +1043,9 @@ Time: {time}
         var storedHash = adminDoc && adminDoc.passwordHash ? adminDoc.passwordHash : null;
 
         if (!storedHash) {
-          // First time — set default password '2017' in Firestore
-          var defaultHash = await hashPassword('2017');
-          await fsSetDoc('settings', 'adminAuth', { passwordHash: defaultHash, createdAt: new Date().toISOString() });
-          storedHash = defaultHash;
+          document.getElementById('gateError').style.display = 'block';
+          document.getElementById('gateError').textContent = 'Admin not configured. Contact developer.';
+          return;
         }
 
         var hashedInput = await hashPassword(input);
@@ -1047,6 +1053,7 @@ Time: {time}
           var gateHash = await hashPassword('admin_session_' + Date.now());
           sessionStorage.setItem('mohini_admin_auth', gateHash);
           sessionStorage.setItem('mohini_admin_gate_hash', gateHash);
+          sessionStorage.setItem('mohini_admin_session_time', Date.now());
           sessionStorage.removeItem('mohini_admin_attempts');
           sessionStorage.removeItem('mohini_admin_lock');
 
@@ -1059,9 +1066,7 @@ Time: {time}
             if (!fbAuth.currentUser) {
               await fbAuth.signInAnonymously();
             }
-          } catch(e) {
-            console.warn('Firebase anonymous auth failed:', e);
-          }
+          } catch(e) {}
 
           setTimeout(function() {
             if (typeof initAdmin === 'function') initAdmin();
@@ -1084,7 +1089,6 @@ Time: {time}
           document.getElementById('gatePassword').focus();
         }
       } catch(e) {
-        console.error('Admin auth check failed:', e);
         document.getElementById('gateError').style.display = 'block';
         document.getElementById('gateError').textContent = 'Connection error. Please try again.';
       }
