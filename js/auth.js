@@ -49,11 +49,13 @@ function _fsTimeout(ms) {
   return new Promise(function(_, reject) { setTimeout(function(){ reject(new Error('Firestore timeout')); }, ms); });
 }
 
+var FS_TIMEOUT = 5000;
+
 async function fsSetDoc(collection, docId, data) {
   try {
     return await Promise.race([
       db.collection(collection).doc(docId).set(data, { merge: true }),
-      _fsTimeout(15000)
+      _fsTimeout(FS_TIMEOUT)
     ]);
   } catch(e) { return null; }
 }
@@ -62,7 +64,7 @@ async function fsGetDoc(collection, docId) {
   try {
     var snap = await Promise.race([
       db.collection(collection).doc(docId).get(),
-      _fsTimeout(15000)
+      _fsTimeout(FS_TIMEOUT)
     ]);
     return snap && snap.exists ? snap.data() : null;
   } catch(e) { return null; }
@@ -72,7 +74,7 @@ async function fsGetCollection(collection) {
   try {
     var snap = await Promise.race([
       db.collection(collection).get(),
-      _fsTimeout(15000)
+      _fsTimeout(FS_TIMEOUT)
     ]);
     return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
   } catch(e) { return []; }
@@ -82,7 +84,7 @@ async function fsDeleteDoc(collection, docId) {
   try {
     return await Promise.race([
       db.collection(collection).doc(docId).delete(),
-      _fsTimeout(15000)
+      _fsTimeout(FS_TIMEOUT)
     ]);
   } catch(e) { return null; }
 }
@@ -91,7 +93,7 @@ async function fsQuery(collection, field, op, value) {
   try {
     var snap = await Promise.race([
       db.collection(collection).where(field, op, value).get(),
-      _fsTimeout(15000)
+      _fsTimeout(FS_TIMEOUT)
     ]);
     return snap && snap.docs ? snap.docs.map(function(d) { return Object.assign({ _id: d.id }, d.data()); }) : [];
   } catch(e) { return []; }

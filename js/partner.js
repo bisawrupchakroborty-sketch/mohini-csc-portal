@@ -1505,53 +1505,36 @@ fbOnAuthStateChanged(function(user) {
   if (window._authHandled) return;
   window._authHandled = true;
 
-  checkMaintenance().then(function(inMaintenance) {
-    if (inMaintenance) return;
-    if (checkLogin()) {
-      Promise.all([
-        loadServicesFromAdmin(),
-        loadApplications(),
-        loadWalletState(),
-        renderTickets()
-      ]).then(function() {
-        updateDashboardStats();
-        renderRecent();
-        renderApplications();
-        renderDownloads();
-        renderWalletTxns();
-        hideLoader();
-      }).catch(function() {
-        updateDashboardStats();
-        renderRecent();
-        renderApplications();
-        renderDownloads();
-        renderWalletTxns();
-        hideLoader();
-      });
-    } else {
+  // Check login FIRST (no Firestore — instant), load dashboard immediately
+  if (checkLogin()) {
+    Promise.all([
+      loadServicesFromAdmin(),
+      loadApplications(),
+      loadWalletState(),
+      renderTickets()
+    ]).then(function() {
+      updateDashboardStats();
+      renderRecent();
+      renderApplications();
+      renderDownloads();
+      renderWalletTxns();
       hideLoader();
-    }
-  }).catch(function() {
-    if (checkLogin()) {
-      Promise.all([
-        loadServicesFromAdmin(),
-        loadApplications(),
-        loadWalletState(),
-        renderTickets()
-      ]).then(function() {
-        updateDashboardStats();
-        renderRecent();
-        renderApplications();
-        renderDownloads();
-        renderWalletTxns();
-        hideLoader();
-      }).catch(function() {
-        hideLoader();
-      });
-    } else {
+    }).catch(function() {
+      updateDashboardStats();
+      renderRecent();
+      renderApplications();
+      renderDownloads();
+      renderWalletTxns();
       hideLoader();
-    }
-  });
+    });
+
+    // Check maintenance in BACKGROUND (non-blocking)
+    checkMaintenance().then(function(inMaintenance) {
+      if (inMaintenance) showMaintenancePage();
+    }).catch(function(){});
+  } else {
+    hideLoader();
+  }
 });
 
 function hideLoader() {

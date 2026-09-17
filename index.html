@@ -21,12 +21,30 @@
     .top-nav .nav-links a.active{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.3)}
     .top-nav .nav-links a .nav-icon{font-size:15px}
     .top-nav .nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
-    .top-nav .profile-chip{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:40px;cursor:pointer;transition:all .2s}
+    .top-nav .profile-chip{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:40px;cursor:pointer;transition:all .2s;position:relative}
     .top-nav .profile-chip:hover{border-color:#4f46e5}
     .top-nav .profile-chip .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
     .top-nav .profile-chip .info{line-height:1.2}
     .top-nav .profile-chip .info b{font-size:12px;color:#1e293b;display:block}
     .top-nav .profile-chip .info small{font-size:10px;color:#94a3b8}
+    /* Profile Dropdown */
+    .profile-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:280px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.12);z-index:1000;display:none;overflow:hidden;animation:dropIn .2s ease}
+    .profile-dropdown.show{display:block}
+    @keyframes dropIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .profile-dropdown .pd-header{padding:20px;text-align:center;border-bottom:1px solid #f1f5f9}
+    .profile-dropdown .pd-header .pd-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:900;margin:0 auto 10px}
+    .profile-dropdown .pd-header .pd-name{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:2px}
+    .profile-dropdown .pd-header .pd-id{font-size:12px;color:#94a3b8}
+    .profile-dropdown .pd-header .pd-email{font-size:11px;color:#64748b;margin-top:4px;word-break:break-all}
+    .profile-dropdown .pd-body{padding:8px}
+    .profile-dropdown .pd-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;border-radius:10px;background:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;text-align:left}
+    .profile-dropdown .pd-btn:hover{background:#f1f5f9}
+    .profile-dropdown .pd-btn .pd-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0}
+    .profile-dropdown .pd-btn.logout .pd-icon{background:#fef2f2;color:#dc2626}
+    .profile-dropdown .pd-btn.logout:hover{background:#fef2f2;color:#dc2626}
+    .profile-dropdown .pd-btn.delete .pd-icon{background:#fef2f2;color:#dc2626}
+    .profile-dropdown .pd-btn.delete:hover{background:#fef2f2}
+    .profile-dropdown .pd-divider{height:1px;background:#f1f5f9;margin:4px 8px}
     @media(max-width:1024px){.top-nav .nav-links{display:none}.top-nav{justify-content:space-between}}
 
     /* ===== WELCOME HERO ===== */
@@ -131,11 +149,30 @@
       <a href="#" data-view="support"><span class="nav-icon">💬</span> Support</a>
     </div>
     <div class="nav-right">
-      <div class="profile-chip" onclick="toggleProfileMenu()">
+      <div class="profile-chip" onclick="toggleProfileMenu(event)">
         <div class="avatar">M</div>
         <div class="info">
           <b>Mohini Partner</b>
           <small>No Partner ID</small>
+        </div>
+      </div>
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="pd-header">
+          <div class="pd-avatar" id="pdAvatar">M</div>
+          <div class="pd-name" id="pdName">Partner</div>
+          <div class="pd-id" id="pdId">No Partner ID</div>
+          <div class="pd-email" id="pdEmail">—</div>
+        </div>
+        <div class="pd-body">
+          <button class="pd-btn logout" onclick="doLogout()">
+            <span class="pd-icon">🚪</span>
+            <span>Logout</span>
+          </button>
+          <div class="pd-divider"></div>
+          <button class="pd-btn delete" onclick="doDeleteAccount()">
+            <span class="pd-icon">🗑</span>
+            <span>Delete Account</span>
+          </button>
         </div>
       </div>
     </div>
@@ -542,8 +579,76 @@
       });
     });
 
-    function toggleProfileMenu() {
-      // Could add dropdown menu later
+    // Profile dropdown
+    function toggleProfileMenu(e) {
+      if (e) e.stopPropagation();
+      var dd = document.getElementById('profileDropdown');
+      dd.classList.toggle('show');
+      // Populate dropdown with user info
+      var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
+      var name = loginData.name || 'Partner';
+      var partnerId = loginData.partnerId || '';
+      var email = loginData.contact || '—';
+      document.getElementById('pdAvatar').textContent = name.charAt(0).toUpperCase();
+      document.getElementById('pdName').textContent = name;
+      document.getElementById('pdId').textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID';
+      document.getElementById('pdEmail').textContent = email;
+    }
+    document.addEventListener('click', function() {
+      var dd = document.getElementById('profileDropdown');
+      if (dd) dd.classList.remove('show');
+    });
+
+    function doLogout() {
+      document.getElementById('profileDropdown').classList.remove('show');
+      sessionStorage.removeItem('mohini_partner_login');
+      fbSignOut().catch(function() {});
+      window.location.href = 'login.html';
+    }
+
+    function doDeleteAccount() {
+      document.getElementById('profileDropdown').classList.remove('show');
+      if (!confirm('Are you sure you want to delete your account?\n\nThis will:\n- Delete your login data\n- Delete all your applications\n- Cannot be undone\n\nType OK to confirm.')) return;
+      if (!confirm('FINAL WARNING: Your account and ALL data will be permanently deleted. Continue?')) return;
+
+      var password = prompt('Enter your password to confirm deletion:');
+      if (!password) { toast('Deletion cancelled.'); return; }
+
+      var loginData = JSON.parse(sessionStorage.getItem('mohini_partner_login') || '{}');
+      var uid = loginData.uid;
+      var user = fbGetUser();
+      var email = loginData.contact;
+
+      if (!uid || !user) {
+        toast('Not logged in. Please login first.');
+        return;
+      }
+
+      toast('Re-authenticating...');
+
+      var credential = firebase.auth.EmailAuthProvider.credential(email, password);
+      user.reauthenticateWithCredential(credential).then(function() {
+        toast('Deleting account...');
+        return Promise.all([
+          fsDeleteDoc('partnerApps', uid),
+          fsDeleteDoc('partnerWallets', uid),
+          fsDeleteDoc('partners', uid)
+        ]).then(function() {
+          return user.delete();
+        });
+      }).then(function() {
+        sessionStorage.removeItem('mohini_partner_login');
+        toast('Account deleted.');
+        setTimeout(function() { window.location.href = 'login.html'; }, 1000);
+      }).catch(function(e) {
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+          toast('Wrong password. Deletion cancelled.');
+        } else if (e.code === 'auth/requires-recent-login') {
+          toast('Session expired. Please login again and then delete.');
+        } else {
+          toast('Delete failed. Try again.');
+        }
+      });
     }
   </script>
 </body>

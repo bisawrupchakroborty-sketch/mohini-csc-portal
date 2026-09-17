@@ -221,47 +221,13 @@
         var cred = await fbAuth.signInWithEmailAndPassword(email, password);
         var uid = cred.user.uid;
 
-        var profile = null;
-        try { profile = await Promise.race([fsGetDoc('partners', uid), new Promise(function(_,r){setTimeout(r,5000)})]); } catch(e){}
-
-        var partnerId = (profile && profile.partnerId) ? profile.partnerId : '';
-        if (!partnerId) {
-          try {
-            var boughtIds = await Promise.race([
-              fsQuery('partnerIds', 'usedBy', '==', uid),
-              new Promise(function(_,r){setTimeout(r,5000)})
-            ]);
-            if (boughtIds && boughtIds.length > 0 && boughtIds[0].partnerId) {
-              partnerId = boughtIds[0].partnerId;
-            }
-          } catch(e){}
-        }
-        if (!partnerId) {
-          try {
-            var allIds = await Promise.race([
-              fsGetCollection('partnerIds'),
-              new Promise(function(_,r){setTimeout(r,5000)})
-            ]);
-            if (allIds && allIds.length > 0) {
-              var match = allIds.find(function(d) {
-                return d.usedBy === uid || (d.email && d.email === email) || (d.phone && profile && d.phone === profile.mobile);
-              });
-              if (match && match.partnerId) {
-                partnerId = match.partnerId;
-              }
-            }
-          } catch(e){}
-        }
-        if (partnerId) {
-          fsSetDoc('partners', uid, { partnerId: partnerId }).catch(function(){});
-        }
-
+        // Redirect IMMEDIATELY — don't wait for Firestore
         var loginData = {
           method: 'firebase',
           contact: email,
-          partnerId: partnerId,
-          name: (profile && profile.name) ? profile.name : cred.user.displayName || email,
-          mobile: (profile && profile.mobile) ? profile.mobile : '',
+          partnerId: '',
+          name: cred.user.displayName || email,
+          mobile: '',
           loggedIn: true,
           loginTime: new Date().toISOString(),
           uid: uid
@@ -270,7 +236,45 @@
         sessionStorage.removeItem('mohini_login_attempts');
         sessionStorage.removeItem('mohini_login_lock');
         toast('Login successful! Redirecting...');
-        setTimeout(function() { window.location.href = 'index.html'; }, 800);
+        window.location.href = 'index.html';
+
+        // Fetch profile + partnerId in BACKGROUND (non-blocking, will update sessionStorage)
+        fsGetDoc('partners', uid).then(function(profile) {
+          var partnerId = (profile && profile.partnerId) ? profile.partnerId : '';
+          if (partnerId) {
+            loginData.partnerId = partnerId;
+            loginData.name = (profile.name) ? profile.name : cred.user.displayName || email;
+            loginData.mobile = profile.mobile || '';
+            sessionStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
+            fsSetDoc('partners', uid, { partnerId: partnerId }).catch(function(){});
+          } else {
+            // Try partnerIds collection in parallel
+            Promise.all([
+              fsQuery('partnerIds', 'usedBy', '==', uid),
+              fsGetCollection('partnerIds')
+            ]).then(function(results) {
+              var boughtIds = results[0];
+              var allIds = results[1];
+              if (!partnerId && boughtIds && boughtIds.length > 0 && boughtIds[0].partnerId) {
+                partnerId = boughtIds[0].partnerId;
+              }
+              if (!partnerId && allIds && allIds.length > 0) {
+                var match = allIds.find(function(d) {
+                  return d.usedBy === uid || (d.email && d.email === email) || (d.phone && profile && d.phone === profile.mobile);
+                });
+                if (match && match.partnerId) partnerId = match.partnerId;
+              }
+              if (partnerId) {
+                loginData.partnerId = partnerId;
+                loginData.name = (profile && profile.name) ? profile.name : cred.user.displayName || email;
+                loginData.mobile = (profile && profile.mobile) ? profile.mobile : '';
+                sessionStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
+                fsSetDoc('partners', uid, { partnerId: partnerId }).catch(function(){});
+              }
+            }).catch(function(){});
+          }
+        }).catch(function(){});
+
       } catch (err) {
         btn.disabled=false;btn.innerHTML='<span class="btn-shine"></span><span>→</span> Login';
         _loginAttempts++;
