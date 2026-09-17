@@ -33,8 +33,8 @@ function checkLogin() {
       return false;
     }
     // Update UI with login info
-    const partnerId = loginData.partnerId || '';
-    const userName = loginData.name || 'Partner';
+    const partnerId = login.partnerId || '';
+    const userName = login.name || 'Partner';
     // Top nav profile chip
     document.querySelectorAll('.profile-chip .info b').forEach(function(el) { el.textContent = userName; });
     document.querySelectorAll('.profile-chip .info small').forEach(function(el) { el.textContent = partnerId ? 'ID: ' + partnerId : 'No Partner ID'; });
@@ -44,7 +44,7 @@ function checkLogin() {
     var heroPartnerId = document.getElementById('heroPartnerId');
     if (heroPartnerId) heroPartnerId.textContent = partnerId ? '🏢 ' + partnerId : '🏢 MOHINI CSC';
     var heroPhone = document.getElementById('heroPhone');
-    if (heroPhone) heroPhone.textContent = '📱 ' + (loginData.contact || loginData.mobile || '—');
+    if (heroPhone) heroPhone.textContent = '📱 ' + (login.contact || login.mobile || '—');
     var heroAccountType = document.getElementById('heroAccountType');
     if (heroAccountType) heroAccountType.textContent = partnerId ? '👤 Partner Account' : '👤 Retailer Account';
     return true;
@@ -1488,7 +1488,7 @@ fbOnAuthStateChanged(function(user) {
     window._authReady = true;
     // First call with null — Firebase hasn't restored session yet.
     // Set a timeout: if no second call comes in 3s, user is genuinely not logged in.
-    setTimeout(function() {
+    window._authRedirectTimer = setTimeout(function() {
       if (!window._authHandled) {
         window._authHandled = true;
         window.location.href = 'login.html';
@@ -1497,6 +1497,11 @@ fbOnAuthStateChanged(function(user) {
     return;
   }
 
+  // Got real auth state — cancel the redirect timeout
+  if (window._authRedirectTimer) {
+    clearTimeout(window._authRedirectTimer);
+    window._authRedirectTimer = null;
+  }
   if (window._authHandled) return;
   window._authHandled = true;
 
