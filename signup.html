@@ -340,7 +340,7 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    // Check maintenance mode — BLOCK page until checked
+    // Check maintenance mode
     (function() {
       var maintenanceOverlay = document.createElement('div');
       maintenanceOverlay.id = 'maintenanceCheck';
@@ -351,6 +351,12 @@
       var style = document.createElement('style');
       style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
       document.head.appendChild(style);
+
+      // Safety: auto-remove overlay after 3 seconds regardless
+      setTimeout(function() {
+        var ov = document.getElementById('maintenanceCheck');
+        if (ov) ov.remove();
+      }, 3000);
 
       fsGetDoc('settings', 'maintenance').then(function(doc) {
         if (doc && doc.enabled === true) {

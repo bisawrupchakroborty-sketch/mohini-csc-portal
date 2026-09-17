@@ -150,7 +150,7 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    // Check maintenance mode — BLOCK page until checked
+    // Check maintenance mode
     (function() {
       var maintenanceOverlay = document.createElement('div');
       maintenanceOverlay.id = 'maintenanceCheck';
@@ -161,6 +161,12 @@
       var style = document.createElement('style');
       style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
       document.head.appendChild(style);
+
+      // Safety: auto-remove overlay after 3 seconds regardless
+      setTimeout(function() {
+        var ov = document.getElementById('maintenanceCheck');
+        if (ov) ov.remove();
+      }, 3000);
 
       fsGetDoc('settings', 'maintenance').then(function(doc) {
         if (doc && doc.enabled === true) {
@@ -193,9 +199,9 @@
       else{inp.type='password';btn.textContent='👁'}
     }
 
-    // Client-side rate limiting
-    var _loginAttempts = parseInt(localStorage.getItem('mohini_login_attempts') || '0');
-    var _loginLockUntil = parseInt(localStorage.getItem('mohini_login_lock') || '0');
+    // Rate limiting (sessionStorage — cleared on browser close)
+    var _loginAttempts = parseInt(sessionStorage.getItem('mohini_login_attempts') || '0');
+    var _loginLockUntil = parseInt(sessionStorage.getItem('mohini_login_lock') || '0');
 
     async function doLogin(){
       if (Date.now() < _loginLockUntil) {
@@ -276,27 +282,32 @@
           uid: uid
         };
         localStorage.setItem('mohini_partner_login', JSON.stringify(loginData));
-        localStorage.removeItem('mohini_login_attempts');
-        localStorage.removeItem('mohini_login_lock');
+        sessionStorage.removeItem('mohini_login_attempts');
+        sessionStorage.removeItem('mohini_login_lock');
         toast('Login successful! Redirecting...');
         setTimeout(function() { window.location.href = 'index.html'; }, 800);
       } catch (err) {
         btn.disabled=false;btn.innerHTML='<span class="btn-shine"></span><span>→</span> Login';
         _loginAttempts++;
-        localStorage.setItem('mohini_login_attempts', _loginAttempts);
+        sessionStorage.setItem('mohini_login_attempts', _loginAttempts);
         if (_loginAttempts >= 5) {
           _loginLockUntil = Date.now() + 900000;
-          localStorage.setItem('mohini_login_lock', _loginLockUntil);
+          sessionStorage.setItem('mohini_login_lock', _loginLockUntil);
           document.getElementById('emailError').style.display='block';
           document.getElementById('emailError').textContent='Too many attempts. Locked for 15 minutes.';
         } else {
-          var msg = err.message || 'Login failed';
+          var msg = (err.code || err.message || 'Login failed').toLowerCase();
+          document.getElementById('emailError').style.display='block';
           if (msg.includes('too-many-requests')) {
-            document.getElementById('emailError').style.display='block';
             document.getElementById('emailError').textContent='Too many attempts. Try again later.';
-          } else {
-            document.getElementById('emailError').style.display='block';
+          } else if (msg.includes('user-not-found') || msg.includes('user-disabled')) {
+            document.getElementById('emailError').textContent='No account found with this email.';
+          } else if (msg.includes('wrong-password') || msg.includes('invalid-credential') || msg.includes('invalid-email')) {
             document.getElementById('emailError').textContent='Invalid email or password. (' + _loginAttempts + '/5 attempts)';
+          } else if (msg.includes('network') || msg.includes('offline')) {
+            document.getElementById('emailError').textContent='Network error. Please check your connection.';
+          } else {
+            document.getElementById('emailError').textContent='Login failed. Please try again.';
           }
         }
       }
